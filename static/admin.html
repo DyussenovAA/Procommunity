@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ПроКомьюнити — метрики пилота</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--navy:#192A43;--ink:#111725;--muted:#6B7280;--line:#E6E9F0;--bg:#EDF0F5;--green:#12B886;--amber:#FF9F1C;
+    --display:"Space Grotesk",-apple-system,Segoe UI,Roboto,sans-serif;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--data:ui-monospace,Menlo,Consolas,monospace}
+  *{box-sizing:border-box} body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--bg)}
+  header{background:var(--navy);color:#fff;padding:18px 20px}
+  header h1{font-family:var(--display);font-size:20px;margin:0;letter-spacing:-.01em}
+  header p{margin:4px 0 0;font-size:12.5px;color:#93A0B4;font-family:var(--data)}
+  .wrap{max-width:920px;margin:0 auto;padding:20px}
+  .gate{max-width:420px;margin:60px auto;background:#fff;border-radius:18px;padding:24px;box-shadow:0 2px 12px rgba(20,30,55,.08)}
+  .gate h2{margin:0 0 4px;font-size:18px} .gate p{color:var(--muted);font-size:13.5px;margin:0 0 16px}
+  input{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:15px;font-family:var(--sans);margin-bottom:12px}
+  .btn{border:0;border-radius:12px;background:var(--navy);color:#fff;padding:12px 16px;font-weight:650;font-size:14px;cursor:pointer;font-family:var(--sans)}
+  .btn.block{width:100%}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+  .kpi{background:#fff;border-radius:16px;padding:16px;box-shadow:0 1px 3px rgba(20,30,55,.06)}
+  .kpi .v{font-family:var(--display);font-size:32px;font-weight:700;letter-spacing:-.02em;line-height:1}
+  .kpi .k{color:var(--muted);font-size:12.5px;margin-top:6px}
+  .kpi.hl{background:var(--navy);color:#fff} .kpi.hl .k{color:#AEB6C2}
+  .card{background:#fff;border-radius:18px;padding:18px;box-shadow:0 1px 3px rgba(20,30,55,.06);margin-bottom:16px}
+  .card h3{margin:0 0 14px;font-size:15px}
+  .bars{display:flex;align-items:flex-end;gap:8px;height:150px;padding-top:8px}
+  .bars .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+  .bars .bar{width:100%;max-width:42px;background:var(--navy);border-radius:6px 6px 0 0;transition:height .6s}
+  .bars .lbl{font-size:11px;color:var(--muted);font-family:var(--data)}
+  .bars .val{font-size:11px;font-weight:700;font-family:var(--display)}
+  .fb{padding:11px 0;border-top:1px solid var(--line)} .fb:first-child{border-top:0}
+  .fb .st{color:var(--amber);letter-spacing:2px;font-size:13px}
+  .fb .tx{font-size:14px;margin-top:2px} .fb .wh{color:var(--muted);font-size:12px;font-family:var(--data);margin-top:2px}
+  .muted{color:var(--muted);font-size:13px} .err{color:#E03131;font-size:13px;margin-top:8px}
+  .refresh{float:right;font-size:12.5px;color:#93A0B4;background:transparent;border:1px solid #33465C;color:#C9D2E0;border-radius:10px;padding:6px 12px;cursor:pointer}
+</style>
+</head>
+<body>
+<header><button class="refresh" id="refresh" style="display:none">Обновить</button>
+  <h1>ПроКомьюнити · метрики пилота</h1><p>реальное использование, обновляется вживую</p></header>
+<div class="wrap" id="wrap">
+  <div class="gate" id="gate">
+    <h2>Доступ к метрикам</h2>
+    <p>Введите ключ (ADMIN_KEY из настроек сервиса).</p>
+    <input id="key" type="password" placeholder="Ключ доступа" />
+    <button class="btn block" id="go">Открыть</button>
+    <div class="err" id="err"></div>
+  </div>
+  <div id="dash"></div>
+</div>
+<script>
+"use strict";
+const q=s=>document.querySelector(s);
+function getKey(){ const u=new URLSearchParams(location.search); return u.get("key")||""; }
+async function loadMetrics(key){
+  const r=await fetch("/api/metrics?key="+encodeURIComponent(key));
+  if(!r.ok) throw new Error(r.status===403?"Неверный ключ":("Ошибка "+r.status));
+  return r.json();
+}
+function kpi(v,k,hl){ return `<div class="kpi ${hl?'hl':''}"><div class="v">${v}</div><div class="k">${k}</div></div>`; }
+function render(m){
+  q("#gate").style.display="none"; q("#refresh").style.display="block";
+  const maxN=Math.max(1,...m.daily_opens.map(d=>d.n));
+  const bars=m.daily_opens.length? m.daily_opens.map(d=>`<div class="col">
+      <div class="val">${d.n}</div>
+      <div class="bar" style="height:${Math.round(d.n/maxN*120)}px"></div>
+      <div class="lbl">${d.day}</div></div>`).join("")
+    : `<div class="muted">Пока нет открытий. Данные появятся, когда курьеры начнут пользоваться.</div>`;
+  const fb=m.feedback.length? m.feedback.map(f=>`<div class="fb">
+      <div class="st">${"★".repeat(f.rating)}${"☆".repeat(5-f.rating)}</div>
+      <div class="tx">${(f.text||"").replace(/[<>&]/g,"")||"<i>(без текста)</i>"}</div>
+      <div class="wh">${(f.user||"").replace(/[<>&]/g,"")}</div></div>`).join("")
+    : `<div class="muted">Отзывов пока нет.</div>`;
+  q("#dash").innerHTML=`
+    <div class="grid">
+      ${kpi(m.unique_users,"уникальных пользователей",true)}
+      ${kpi(m.opens,"открытий приложения")}
+      ${kpi(m.checklist_actions,"шагов чек-листа отмечено")}
+      ${kpi(m.density_reports,"сигналов плотности")}
+    </div>
+    <div class="grid">
+      ${kpi(m.mentees_added,"новичков заведено")}
+      ${kpi(m.buddy_cards,"карточек «напарник»")}
+      ${kpi(m.feedback_count,"отзывов")}
+      ${kpi(m.avg_rating||"—","средняя оценка")}
+    </div>
+    <div class="card"><h3>Открытия по дням</h3><div class="bars">${bars}</div></div>
+    <div class="card"><h3>Отзывы (${m.feedback_count})</h3>${fb}</div>
+    <div class="card">
+      <h3>Рассылка всем пользователям</h3>
+      <p class="muted" style="margin:-6px 0 12px">Сообщение уйдёт всем, кто заходил в бота. Дойдёт только тем, кто запускал бота (нажимал Start).</p>
+      <textarea id="bcastText" rows="4" placeholder="Текст сообщения. Вставьте ссылку на Google-форму." style="width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;font-family:var(--sans);font-size:14px;resize:vertical"></textarea>
+      <button class="btn" id="bcastSend" style="margin-top:10px">Отправить всем</button>
+      <div class="muted" id="bcastStatus" style="margin-top:10px"></div>
+    </div>
+    <p class="muted">Метрики считаются по реальным событиям использования. Retention (удержание) — метрика 30 дней и появляется по мере накопления когорты.</p>`;
+}
+async function go(key){
+  try{ const m=await loadMetrics(key); render(m); setupBroadcast(key);
+    try{ localStorage.setItem("procom_admin_key",key); }catch(e){}
+    const u=new URL(location); u.searchParams.set("key",key); history.replaceState({},"",u);
+  }catch(e){ q("#err").textContent=e.message; }
+}
+function setupBroadcast(key){
+  const btn=q("#bcastSend"), st=q("#bcastStatus"), ta=q("#bcastText");
+  if(!btn) return;
+  let poll=null;
+  async function refresh(){
+    try{ const r=await fetch("/api/broadcast/status?key="+encodeURIComponent(key)); const su=await r.json();
+      st.textContent = su.running
+        ? `Отправка… ${su.sent+su.failed}/${su.total} (доставлено ${su.sent}, не дошло ${su.failed})`
+        : (su.total ? `Готово: доставлено ${su.sent} из ${su.total}. Не дошло ${su.failed} — не запускали бота.` : "");
+      if(!su.running && poll){ clearInterval(poll); poll=null; btn.disabled=false; }
+    }catch(e){}
+  }
+  btn.onclick=async ()=>{
+    const text=ta.value.trim();
+    if(!text){ st.textContent="Введите текст сообщения."; return; }
+    if(!confirm("Отправить это сообщение всем пользователям бота?")) return;
+    btn.disabled=true; st.textContent="Запуск…";
+    try{
+      const r=await fetch("/api/broadcast?key="+encodeURIComponent(key),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
+      const d=await r.json();
+      if(!d.ok){ st.textContent="Не удалось: "+(d.reason==="no_bot_token"?"не задан BOT_TOKEN":d.reason==="already_running"?"рассылка уже идёт":d.reason==="empty"?"пустой текст":d.reason); btn.disabled=false; return; }
+      st.textContent=`Отправка ${d.targets} пользователям…`;
+      poll=setInterval(refresh,1500); refresh();
+    }catch(e){ st.textContent="Ошибка сети"; btn.disabled=false; }
+  };
+}
+q("#go").addEventListener("click",()=>go(q("#key").value.trim()));
+q("#key").addEventListener("keydown",e=>{ if(e.key==="Enter") go(q("#key").value.trim()); });
+q("#refresh").addEventListener("click",()=>go(getKey()||q("#key").value.trim()));
+(function(){ const k=getKey()||(function(){try{return localStorage.getItem("procom_admin_key")||"";}catch(e){return "";}})();
+  if(k){ q("#key").value=k; go(k); } })();
+</script>
+</body>
+</html>

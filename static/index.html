@@ -1,0 +1,929 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>ПроКомьюнити</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root{
+    --ink:#111725; --muted:#6B7280; --line:#E6E9F0; --bg:#EDF0F5; --surface:#FFFFFF;
+    --navy:#192A43; --navy-2:#33465C; --navy-soft:#E7ECF3;
+    --amber:#FF9F1C; --amber-soft:#FFF1DC; --green:#12B886; --green-soft:#E4F7EF;
+    --shadow:0 14px 36px rgba(15,22,38,.14); --card-sh:0 2px 10px rgba(20,30,55,.05);
+    --display:"Space Grotesk",-apple-system,Segoe UI,Roboto,sans-serif;
+    --data:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0; height:100%; overflow:hidden; overscroll-behavior:none}
+  body{font-family:var(--sans); color:var(--ink); background:#D7DBE6; -webkit-font-smoothing:antialiased;
+    display:flex; justify-content:center; position:fixed; inset:0; overflow:hidden}
+  .app{width:100%; max-width:430px; background:var(--bg); height:100vh; height:100dvh; position:relative; display:flex; flex-direction:column; overflow:hidden}
+  @media(min-width:520px){ body{align-items:center; padding:24px 0} .app{height:min(884px,96vh); border-radius:32px; box-shadow:var(--shadow)} }
+  .rolebar{background:var(--navy); color:#fff; padding:12px 14px 12px; flex:0 0 auto}
+  .brandrow{display:flex; justify-content:center; margin-bottom:11px}
+  .brandrow img{height:50px; display:block; border-radius:8px}
+  .rolebar .lbl{font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#93A0B4; font-family:var(--data)}
+  .seg{display:flex; gap:4px; margin-top:7px; background:#22303f; padding:4px; border-radius:12px}
+  .seg button{flex:1; border:0; background:transparent; color:#AEB6C2; font-weight:600; font-size:13px; padding:8px 0; border-radius:9px; cursor:pointer; font-family:var(--sans); transition:.15s}
+  .seg button.on{background:#fff; color:var(--navy)}
+  .seg button:active{transform:scale(.97)}
+  .seg button:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .screen{flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; padding:16px 16px 20px}
+  .screen::-webkit-scrollbar{width:0}
+  h1.brand{font-family:var(--display); font-size:22px; font-weight:700; margin:2px 0 2px; letter-spacing:-.02em; color:var(--navy)}
+  .sub{color:var(--muted); font-size:13px; margin:0 0 14px}
+  .card{background:var(--surface); border-radius:20px; padding:16px; box-shadow:var(--card-sh); margin-bottom:12px}
+  .card.tight{padding:14px}
+  .loader{display:grid; place-items:center; height:60vh; color:var(--muted)}
+  .spin{width:34px; height:34px; border:3px solid var(--navy-soft); border-top-color:var(--navy); border-radius:50%; animation:sp 1s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  /* hero ring */
+  .hero{background:radial-gradient(120% 90% at 80% -10%, #3A5074 0%, #192A43 55%); color:#fff; border-radius:24px; padding:22px 20px 20px; margin-bottom:14px; position:relative; overflow:hidden}
+  .hero .eyebrow{font-family:var(--data); font-size:11px; letter-spacing:.12em; text-transform:uppercase; opacity:.85}
+  .hero .eyebrow{color:#FFC978}
+  .ring{position:relative; width:210px; height:210px; margin:6px auto 4px}
+  .ring svg{transform:rotate(-90deg)}
+  .ring-bg{fill:none; stroke:rgba(255,255,255,.16); stroke-width:14}
+  .ring-fg{fill:none; stroke:var(--amber); stroke-width:14; stroke-linecap:round; transition:stroke-dashoffset 1.1s cubic-bezier(.3,.8,.3,1)}
+  .ring-center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center}
+  .ring-center .rd{font-family:var(--display); font-weight:700; font-size:66px; line-height:1; letter-spacing:-.03em}
+  .ring-center .rl{font-size:13px; opacity:.8; margin-top:2px; font-family:var(--data); letter-spacing:.05em}
+  .herofoot{text-align:center; font-size:14px; opacity:.92; margin-top:6px}
+  .mentor{display:flex; align-items:center; gap:12px}
+  .ava{width:44px; height:44px; border-radius:14px; display:grid; place-items:center; color:#fff; font-weight:700; flex:0 0 auto; font-family:var(--display)}
+  .mentor .n{font-weight:650; font-size:15px}
+  .mentor .r{color:var(--muted); font-size:12.5px}
+  .btn{border:0; border-radius:13px; padding:10px 14px; font-weight:650; font-size:14px; cursor:pointer; font-family:var(--sans); text-decoration:none; display:inline-block; text-align:center; transition:transform .1s}
+  .btn:active{transform:scale(.97)}
+  .btn.pri{background:var(--navy); color:#fff}
+  .btn.ghost{background:var(--navy-soft); color:var(--navy)}
+  .btn.block{width:100%; padding:13px}
+  .btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .cardhead{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
+  .cardhead h3{margin:0; font-size:15px}
+  .pct{font-family:var(--display); font-size:15px; color:var(--amber); font-weight:700}
+  .chk{display:flex; align-items:center; gap:12px; padding:11px 0; border-top:1px solid var(--line); cursor:pointer}
+  .bar + .chk{border-top:0}
+  .box{width:24px; height:24px; border-radius:8px; border:2px solid var(--line); flex:0 0 auto; display:grid; place-items:center; transition:.15s}
+  .chk.on .box{background:var(--green); border-color:var(--green)}
+  .box svg{opacity:0; transition:.15s}
+  .chk.on .box svg{opacity:1}
+  .chk .t{font-size:14.5px}
+  .chk.on .t{color:var(--muted); text-decoration:line-through}
+  .bar{height:9px; background:var(--line); border-radius:6px; overflow:hidden}
+  .bar > i{display:block; height:100%; border-radius:6px; background:var(--amber); transition:width .8s cubic-bezier(.3,.8,.3,1)}
+  .row{display:flex; align-items:center; gap:12px; padding:12px 0; border-top:1px solid var(--line)}
+  .row:first-child{border-top:0}
+  .row .grow{flex:1; min-width:0}
+  .row .nm{font-weight:600; font-size:14.5px}
+  .row .meta{color:var(--muted); font-size:12.5px; font-family:var(--data)}
+  .status{font-size:11px; font-weight:700; padding:4px 9px; border-radius:20px; white-space:nowrap}
+  .st-ok{background:var(--green-soft); color:#0B7A57}
+  .st-risk{background:var(--amber-soft); color:#B4690E}
+  .st-go{background:var(--navy-soft); color:var(--navy)}
+  .mini-bar{height:6px; background:var(--line); border-radius:4px; overflow:hidden; margin-top:7px}
+  .mini-bar > i{display:block; height:100%; background:var(--navy); transition:width .7s}
+  .sig{padding:12px 0; border-top:1px solid var(--line)}
+  .sig:first-child{border-top:0}
+  .sig .p{font-weight:600; font-size:14.5px}
+  .sig .d{color:var(--muted); font-size:12.5px; font-family:var(--data); margin-top:2px}
+  .dotc{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
+  .tag{display:inline-block; font-size:11px; font-weight:700; padding:3px 8px; border-radius:6px; background:var(--navy-soft); color:var(--navy); font-family:var(--data)}
+  .empty{color:var(--muted); font-size:13.5px; text-align:center; padding:22px 8px}
+  #map{height:270px; border-radius:16px; overflow:hidden; margin-bottom:8px; z-index:0}
+  .fallback{height:150px;border-radius:16px;background:var(--navy-soft);display:grid;place-items:center;color:var(--navy);font-size:13px;text-align:center;padding:20px;margin-bottom:8px}
+  .legend{display:flex; gap:14px; justify-content:center; margin:0 0 12px; font-size:12px; color:var(--muted)}
+  .legend span{display:inline-flex; align-items:center; gap:5px}
+  .legend i{width:10px; height:10px; border-radius:50%; display:inline-block}
+  .leaflet-container{font-family:var(--sans)}
+  .kpi{background:radial-gradient(120% 100% at 15% 0%, #16C495 0%, #0E9F74 70%); color:#fff; border-radius:24px; padding:22px; margin-bottom:14px; position:relative; overflow:hidden}
+  .kpi .num{font-family:var(--display); font-size:62px; font-weight:700; letter-spacing:-.03em; line-height:1}
+  .kpi .cap{font-size:13.5px; opacity:.95; margin-top:4px; max-width:80%}
+  .verdict{display:inline-flex; align-items:center; gap:6px; margin-top:14px; background:rgba(255,255,255,.2); padding:7px 12px; border-radius:20px; font-size:12.5px; font-weight:650}
+  .cmp{margin:8px 0}
+  .cmp .lg{display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px}
+  .cmp .lg b{font-family:var(--display)}
+  .cmpbar{height:16px; border-radius:9px; background:var(--line); overflow:hidden}
+  .cmpbar > i{display:block; height:100%; border-radius:9px; width:0; transition:width .9s cubic-bezier(.3,.8,.3,1)}
+  .gapchip{display:inline-block; margin-top:2px; font-size:12px; font-weight:700; color:var(--green); font-family:var(--display)}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .stat{background:var(--surface); border-radius:16px; padding:14px; box-shadow:var(--card-sh)}
+  .stat .v{font-size:24px; font-weight:700; font-family:var(--display)}
+  .stat .k{color:var(--muted); font-size:12px; margin-top:2px}
+  .money{background:var(--navy); color:#fff; border-radius:18px; padding:16px; margin-top:12px}
+  .money .v{font-size:27px; font-weight:700; font-family:var(--display); color:#fff}
+  .money .k{font-size:12.5px; opacity:.82; margin-top:3px; line-height:1.45}
+  .tabs{flex:0 0 auto; background:#fff; border-top:1px solid var(--line); display:flex; padding:8px 8px calc(8px + env(safe-area-inset-bottom)); z-index:5}
+  .tabs button{flex:1; border:0; background:transparent; cursor:pointer; padding:6px 0; color:var(--muted); font-size:11px; font-weight:600; font-family:var(--sans)}
+  .tabs button.on{color:var(--amber)}
+  .tabs button:active{transform:scale(.94)}
+  .tabs .ic{display:block; margin:0 auto 3px; width:22px; height:22px}
+  .sheet{position:absolute; inset:0; background:rgba(15,22,38,.45); display:none; align-items:flex-end; z-index:60}
+  .sheet.open{display:flex}
+  .sheet .panel{background:#fff; width:100%; border-radius:24px 24px 0 0; padding:18px 16px calc(20px + env(safe-area-inset-bottom)); max-height:88%; overflow-y:auto; animation:up .25s ease}
+  @keyframes up{from{transform:translateY(30px)}to{transform:none}}
+  .grab{width:38px; height:4px; background:var(--line); border-radius:3px; margin:0 auto 14px}
+  .toggle{display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-top:1px solid var(--line)}
+  .sw{width:46px; height:28px; border-radius:16px; background:var(--line); position:relative; cursor:pointer; transition:.18s; flex:0 0 auto}
+  .sw.on{background:var(--green)}
+  .sw::after{content:""; position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%; background:#fff; transition:.18s}
+  .sw.on::after{left:21px}
+  .addbtn{border:1.5px dashed var(--line); background:transparent; color:var(--navy); width:100%; padding:13px; border-radius:14px; font-weight:650; cursor:pointer; font-family:var(--sans)}
+  .field{width:100%; border:1px solid var(--line); border-radius:12px; padding:12px; font-size:15px; font-family:var(--sans); margin-bottom:10px}
+  .field:focus{outline:2px solid var(--navy-soft); border-color:var(--navy)}
+  .note{font-size:12px; color:var(--muted); text-align:center; margin:8px 0 0}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important; animation:none!important}}
+
+  .rolebar{position:relative}
+  .fbbtn{position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:11px; border:0; background:#22303f; color:#fff; font-size:15px; cursor:pointer; z-index:2}
+  .fbbtn:active{transform:scale(.95)}
+  .stars{display:flex; gap:8px; justify-content:center; margin:4px 0 14px}
+  .stars span{font-size:34px; cursor:pointer; color:var(--line); transition:.1s}
+  .stars span.on{color:var(--amber)}
+  .ta{width:100%; min-height:92px; border:1px solid var(--line); border-radius:12px; padding:12px; font-size:15px; font-family:var(--sans); resize:vertical; margin-bottom:10px}
+  .ta:focus{outline:2px solid var(--navy-soft); border-color:var(--navy)}
+  .fbitem{padding:11px 0; border-top:1px solid var(--line)}
+  .fbitem:first-child{border-top:0}
+  .fbitem .st{color:var(--amber); font-size:13px; letter-spacing:3px}
+  .fbitem .tx{font-size:14px; margin-top:3px}
+  .fbitem .wh{color:var(--muted); font-size:12px; font-family:var(--data); margin-top:2px}
+
+  .langbtn{position:absolute; top:12px; left:12px; width:34px; height:34px; border-radius:11px; border:0; background:#22303f; color:#fff; font-size:15px; cursor:pointer; z-index:2}
+  .langbtn:active{transform:scale(.95)}
+  .demo-help{margin-inline-start:6px; border:0; background:#22303f; color:#AEB6C2; width:19px; height:19px; border-radius:50%; font-size:11px; font-weight:700; cursor:pointer; vertical-align:middle; line-height:1}
+  .app[dir=rtl] .fbbtn{right:auto; left:12px}
+  .app[dir=rtl] .langbtn{left:auto; right:12px}
+  .app[dir=rtl] .heroline,.app[dir=rtl] .sub{ }
+  .consent{position:absolute; inset:0; background:var(--navy); color:#fff; z-index:50; display:flex; flex-direction:column; padding:26px 22px calc(22px + env(safe-area-inset-bottom)); overflow-y:auto}
+  .consent > img{height:60px; align-self:center; border-radius:12px; margin:8px 0 16px}
+  .consent h2{font-family:var(--display); font-size:24px; margin:0 0 10px; text-align:center}
+  .consent p{font-size:14.5px; line-height:1.55; color:#C9D2E0; margin:0 0 14px}
+  .consent .lnk{color:var(--amber); font-weight:650; cursor:pointer; text-decoration:underline; font-size:14px; display:inline-block; margin-bottom:16px}
+  .consent .agree{display:flex; align-items:center; gap:10px; margin-bottom:16px; cursor:pointer; font-size:14px}
+  .consent .cb{width:24px;height:24px;border-radius:7px;border:2px solid #5A6B84;flex:0 0 auto;display:grid;place-items:center}
+  .consent .agree.on .cb{background:var(--green); border-color:var(--green)}
+  .consent .cb svg{opacity:0}
+  .consent .agree.on .cb svg{opacity:1}
+  .consent .btn{margin-top:auto}
+  .consent .btn[disabled]{opacity:.45}
+  .consent .langrow{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:16px}
+  .consent .langrow button{border:1px solid #3A4A61; background:transparent; color:#C9D2E0; padding:6px 12px; border-radius:20px; font-size:13px; cursor:pointer}
+  .consent .langrow button.on{background:#fff; color:var(--navy); border-color:#fff}
+  .tourmask{position:absolute; inset:0; background:rgba(10,15,26,.62); z-index:30; display:none}
+  .tourmask.on{display:block}
+  .tour-glow{position:relative; z-index:31; box-shadow:0 0 0 3px var(--amber), 0 0 0 10px rgba(255,159,28,.35); border-radius:14px}
+  .tourtip{position:absolute; left:16px; right:16px; bottom:80px; background:#fff; color:var(--ink); border-radius:18px; padding:16px; z-index:33; box-shadow:var(--shadow); display:none}
+  .tourtip.on{display:block}
+  .tourtip .tt{font-size:14.5px; line-height:1.5; margin-bottom:12px}
+  .tourtip .row2{display:flex; justify-content:space-between; align-items:center}
+  .tourtip .sk{border:0;background:transparent;color:var(--muted);font-size:13px;cursor:pointer}
+  .tourtip .dots{display:flex; gap:5px}
+  .tourtip .dots i{width:6px;height:6px;border-radius:50%;background:var(--line)}
+  .tourtip .dots i.on{background:var(--navy)}
+
+  /* ================= craft polish layer ================= */
+  :root{
+    --e1:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.05);
+    --e2:0 2px 6px rgba(16,24,40,.05),0 8px 20px rgba(16,24,40,.08);
+    --e3:0 14px 36px rgba(16,24,40,.14),0 3px 10px rgba(16,24,40,.06);
+    --ease:cubic-bezier(.22,.61,.36,1); --spring:cubic-bezier(.34,1.42,.64,1);
+  }
+  body{ font-family:"Inter",var(--sans); letter-spacing:-.005em; }
+  .app{ background:linear-gradient(180deg,#F5F7FB 0%,#EDF0F5 62%); }
+  h1.brand{ letter-spacing:-.022em; }
+  .sub{ line-height:1.5; }
+  .screen{ padding:18px 16px 22px; }
+  .card{ box-shadow:var(--e1); border:1px solid rgba(16,24,40,.055); border-radius:22px; }
+  .stat{ box-shadow:var(--e1); border:1px solid rgba(16,24,40,.05); border-radius:18px; }
+  .kpi{ box-shadow:var(--e2); } .money{ box-shadow:var(--e2); }
+  .btn{ transition:transform .13s var(--spring), box-shadow .2s var(--ease), filter .2s; letter-spacing:-.01em; }
+  .btn:active{ transform:translateY(1px) scale(.99); }
+  .btn.pri{ background:linear-gradient(180deg,#233450,#192A43); box-shadow:0 1px 2px rgba(16,24,40,.24),0 6px 16px rgba(25,42,67,.20); }
+  .btn.pri:active{ filter:brightness(1.06); }
+  .btn.ghost{ box-shadow:inset 0 0 0 1px rgba(25,42,67,.06); }
+  .addbtn{ transition:border-color .2s, background .2s, transform .13s var(--spring); }
+  .addbtn:active{ transform:scale(.99); }
+  .hero{ background:radial-gradient(130% 100% at 82% -12%, rgba(62,86,128,.35) 0%, transparent 55%), linear-gradient(150deg,#1B2E4A 0%,#14223A 100%); box-shadow:var(--e2); }
+  .hero > *{ position:relative; z-index:1; }
+  .hero::after{ content:""; position:absolute; width:210px; height:210px; left:50%; top:60px; transform:translateX(-50%); background:radial-gradient(circle, rgba(255,159,28,.22) 0%, transparent 62%); pointer-events:none; z-index:0; }
+  .ring-fg{ filter:drop-shadow(0 0 5px rgba(255,159,28,.55)); }
+  .ring-center .rd{ text-shadow:0 2px 14px rgba(0,0,0,.25); }
+  .tabs button{ position:relative; transition:color .2s var(--ease); }
+  .tabs button::before{ content:""; position:absolute; top:0; left:50%; transform:translateX(-50%) scaleX(0); transform-origin:center; width:24px; height:3px; border-radius:0 0 3px 3px; background:var(--amber); transition:transform .25s var(--spring); }
+  .tabs button.on::before{ transform:translateX(-50%) scaleX(1); }
+  .tabs .ic{ transition:transform .2s var(--ease); }
+  .tabs button.on .ic{ transform:translateY(-1px); }
+  .sheet{ -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); background:rgba(15,22,38,.42); }
+  .sheet .panel{ border-radius:26px 26px 0 0; box-shadow:var(--e3); animation:sheetUp .38s var(--spring) both; }
+  @keyframes sheetUp{ from{ transform:translateY(40px); opacity:.4 } to{ transform:none; opacity:1 } }
+  .grab{ width:42px; height:5px; }
+  .field,.ta{ border-radius:14px; transition:border-color .16s var(--ease), box-shadow .16s var(--ease); }
+  .field:focus,.ta:focus{ border-color:var(--navy); box-shadow:0 0 0 3px rgba(59,76,214,.13); outline:none; }
+  .sw{ transition:background .22s var(--ease); }
+  .sw::after{ box-shadow:0 1px 3px rgba(16,24,40,.22); transition:left .24s var(--spring); }
+  .chk .box{ transition:background .18s var(--ease), border-color .18s var(--ease), transform .18s var(--spring); }
+  .chk.on .box{ transform:scale(1.06); }
+  .status{ font-weight:650; letter-spacing:0; }
+  .bar > i,.cmpbar > i,.mini-bar > i{ transition-timing-function:var(--ease); }
+  .empty{ padding:30px 18px; line-height:1.5; }
+  .empty::before{ content:""; display:block; width:44px; height:44px; margin:0 auto 14px; border-radius:14px; background:linear-gradient(180deg,var(--navy-soft),#DDE3EE); box-shadow:inset 0 0 0 1px rgba(25,42,67,.05); }
+  .skel{ background:linear-gradient(100deg,#E7EBF3 28%,#F2F5FA 48%,#E7EBF3 68%); background-size:200% 100%; animation:shimmer 1.4s linear infinite; border-radius:16px; }
+  @keyframes shimmer{ to{ background-position:-200% 0 } }
+  .skhero{ height:210px; border-radius:24px; margin-bottom:14px; } .skcard{ height:66px; margin-bottom:12px; }
+  .screen.nav-in{ animation:contentIn .3s var(--ease) both; }
+  @keyframes contentIn{ from{ opacity:0 } to{ opacity:1 } }
+  .fbbtn,.langbtn{ transition:transform .13s var(--spring), background .2s; }
+  .fbbtn:active,.langbtn:active{ transform:scale(.92); }
+
+  .demo-help{ width:20px; height:20px; font-size:12px; background:transparent; color:var(--amber); box-shadow:inset 0 0 0 1.5px rgba(255,159,28,.55); }
+  .demo-help:active{ transform:scale(.9); }
+
+  .onboard{ padding:8px 4px 24px; }
+  .onboard .obhead{ text-align:center; margin:14px 0 20px; }
+  .onboard h2{ font-family:var(--display); font-size:24px; margin:0 0 6px; letter-spacing:-.02em; }
+  .onboard .obhead p{ color:var(--muted); font-size:14px; margin:0; }
+  .rolecard{ width:100%; text-align:start; background:var(--surface); border:1px solid rgba(16,24,40,.06); border-radius:20px; padding:18px; margin-bottom:12px; cursor:pointer; box-shadow:var(--e1); display:flex; align-items:center; gap:14px; transition:transform .13s var(--spring), box-shadow .2s; font-family:var(--sans); }
+  .rolecard:active{ transform:scale(.99); }
+  .rolecard .ic2{ width:48px; height:48px; border-radius:15px; flex:0 0 auto; display:grid; place-items:center; font-size:24px; }
+  .rolecard .rt{ font-weight:700; font-size:16px; color:var(--ink); }
+  .rolecard .rs{ color:var(--muted); font-size:13px; }
+  .citylist{ display:flex; flex-direction:column; gap:8px; }
+  .cityitem{ width:100%; text-align:start; background:var(--surface); border:1px solid rgba(16,24,40,.06); border-radius:13px; padding:13px 15px; font-size:15px; font-weight:600; cursor:pointer; font-family:var(--sans); box-shadow:var(--e1); color:var(--ink); }
+  .cityitem:active{ transform:scale(.99); }
+  .orline{ text-align:center; color:var(--muted); font-size:12.5px; margin:16px 0 10px; }
+  .prof-hero{ background:radial-gradient(120% 100% at 50% -10%, #33465C 0%, #192A43 60%); color:#fff; border-radius:22px; padding:22px; text-align:center; margin-bottom:14px; box-shadow:var(--e2); }
+  .prof-hero .pav{ width:64px; height:64px; border-radius:20px; margin:0 auto 10px; display:grid; place-items:center; font-family:var(--display); font-weight:700; font-size:26px; background:var(--amber); color:#14223A; }
+  .prof-hero .pn{ font-family:var(--display); font-weight:700; font-size:20px; }
+  .prof-hero .prole{ font-size:13px; opacity:.85; margin-top:2px; font-family:var(--data); }
+  .queue-take{ border:0; background:var(--indigo-soft); color:var(--navy); font-weight:650; font-size:13px; padding:8px 13px; border-radius:11px; cursor:pointer; white-space:nowrap; font-family:var(--sans); }
+  .queue-take:active{ transform:scale(.95); }
+  .gpsbar{ background:var(--amber-soft); color:#8a5a12; border-radius:12px; padding:10px 12px; font-size:12.5px; display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+  .gpsbar button{ border:0; background:transparent; color:#8a5a12; font-weight:700; cursor:pointer; font-size:18px; line-height:1; }
+
+  .mapwrap{ position:relative; }
+  .livepill{ position:absolute; top:10px; right:10px; z-index:600; background:rgba(20,30,50,.8); color:#fff; font-size:11px; font-weight:600; padding:5px 11px 5px 9px; border-radius:20px; display:inline-flex; align-items:center; gap:6px; -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); font-family:var(--data); letter-spacing:.03em; }
+  .livedot{ width:7px; height:7px; border-radius:50%; background:#3BE38B; animation:livepulse 2.2s infinite; }
+  @keyframes livepulse{ 0%{box-shadow:0 0 0 0 rgba(59,227,139,.55)} 70%{box-shadow:0 0 0 8px rgba(59,227,139,0)} 100%{box-shadow:0 0 0 0 rgba(59,227,139,0)} }
+  .leaflet-container{ background:#e8ecf1; }
+  .leaflet-control-zoom{ border:0 !important; box-shadow:var(--e1) !important; border-radius:11px !important; overflow:hidden; margin:12px !important; }
+  .leaflet-control-zoom a{ color:var(--navy) !important; font-weight:700; border-bottom-color:rgba(16,24,40,.06) !important; }
+  .leaflet-popup-content-wrapper{ border-radius:14px; box-shadow:var(--e2); }
+  .leaflet-popup-content{ font-family:var(--sans); font-size:13px; font-weight:500; margin:10px 13px; color:var(--ink); }
+  .leaflet-popup-tip{ box-shadow:none; }
+
+  .crosshair{ display:none; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:550; pointer-events:none; }
+  .crosshair .ring2{ width:34px; height:34px; border:3px solid var(--navy); border-radius:50%; box-shadow:0 0 0 2px rgba(255,255,255,.9), 0 2px 6px rgba(0,0,0,.25); }
+  .crosshair .dot2{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:8px; height:8px; border-radius:50%; background:var(--amber); box-shadow:0 0 0 2px rgba(255,255,255,.9); }
+  .pickbar{ display:none; position:absolute; left:10px; right:10px; bottom:10px; z-index:560; background:rgba(20,30,50,.92); -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); border-radius:14px; padding:9px 10px 9px 13px; align-items:center; justify-content:space-between; gap:10px; }
+  .pickbar .pt{ color:#fff; font-size:12.5px; font-weight:600; }
+  .pickbar .pbtns{ display:flex; gap:8px; flex:0 0 auto; }
+  .pickbar button{ border:0; border-radius:10px; padding:8px 13px; font-weight:650; font-size:13px; cursor:pointer; font-family:var(--sans); }
+  .pickbar .cancel{ background:transparent; color:#AEB6C2; padding:8px 8px; }
+  .pickbar .ok{ background:var(--amber); color:#14223A; }
+  .mapwrap.picking .crosshair{ display:block; }
+  .mapwrap.picking .pickbar{ display:flex; }
+  .mapwrap.picking .livepill{ display:none; }
+  .mapwrap.picking #map{ height:60vh; }
+  .tourbtn{ position:absolute; top:12px; left:52px; width:34px; height:34px; border-radius:11px; border:0; background:#22303f; color:var(--amber); font-size:16px; font-weight:700; cursor:pointer; z-index:2; transition:transform .13s var(--spring); }
+  .tourbtn:active{ transform:scale(.9); }
+  .app[dir=rtl] .tourbtn{ left:auto; right:52px; }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="rolebar">
+    <button class="fbbtn" data-open="feedback" aria-label="Отзыв">✉</button>
+    <button class="langbtn" data-open="lang" aria-label="Язык">🌐</button>
+    <button class="tourbtn" data-open="tour" aria-label="Тур">?</button>
+    <div class="brandrow"><img src="data:image/jpeg;base64,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" alt="ПроКомьюнити"/></div>
+    <div class="lbl"><span data-i18n="demo">Роль для показа</span></div>
+    <div class="seg" id="seg">
+      <button data-role="newbie" class="on" data-i18n="r_newbie">Новичок</button>
+      <button data-role="mentor" data-i18n="r_mentor">Наставник</button>
+      <button data-role="partner" data-i18n="r_business">Бизнес</button>
+    </div>
+  </div>
+  <div class="screen" id="screen"><div class="skel skhero"></div><div class="skel skcard"></div><div class="skel skcard" style="height:120px"></div></div>
+  <div class="tabs" id="tabs" style="display:none"></div>
+  <div class="consent" id="consent" style="display:none">
+    <img src="data:image/jpeg;base64,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" alt="ProCommunity"/>
+    <div class="langrow" id="conslang"></div>
+    <h2 id="c_title"></h2>
+    <p id="c_body"></p>
+    <span class="lnk" id="c_read"></span>
+    <label class="agree" id="c_agree"><span class="cb"><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='#fff' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6L9 17l-5-5'/></svg></span><span id="c_check"></span></label>
+    <button class="btn pri block" id="c_go" disabled></button>
+  </div>
+  <div class="tourmask" id="tourmask"></div>
+  <div class="tourtip" id="tourtip"></div>
+</div>
+<div class="sheet" id="sheet"><div class="panel" id="panel"></div></div>
+
+<script>
+"use strict";
+const CITY = { lat:55.751, lng:37.618, zoom:12 };
+const STEPS = [
+  {k:"standards", t:"Прочитать стандарты сервиса"},
+  {k:"slot",      t:"Выйти на первый слот"},
+  {k:"order",     t:"Выполнить первый заказ"},
+  {k:"demand",    t:"Разобраться с картой спроса"},
+  {k:"payout",    t:"Получить первую выплату"},
+];
+const AVA = ["#2C4A70","#FF9F1C","#12B886","#E8590C","#7048E8","#1098AD"];
+const RMOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const I18N = {"ru": {"demo": "Роль для показа", "r_newbie": "Новичок", "r_mentor": "Наставник", "r_partner": "Партнёр", "t_path": "Путь", "t_density": "Плотность", "t_partner": "Напарник", "of30": "из 30 дней", "first30": "первые 30 дней", "month_hard": "Первый месяц — самый тяжёлый. Идём вместе.", "mentor_on": "Твой наставник · на связи", "write": "Написать", "week1": "Первая неделя", "d_title": "Где сейчас густо", "d_sub": "Живой сигнал от коллег. Красный — очередь, зелёный — свободно.", "add_signal": "Оставить сигнал", "p_title": "Ищу напарника", "p_sub": "Легально делите аренду и смены. Каждый под своим аккаунтом.", "add_card": "Создать карточку", "m_title": "Мои подопечные", "add_mentee": "Добавить новичка", "pt_title": "Экономика удержания", "pt_sub": "Наставничество против контроля. Главное — прирост удержания.", "reviews": "Отзывы", "fb_title": "Оставить отзыв", "fb_note": "Ваш отзыв помогает сделать сервис лучше.", "fb_ph": "Что понравилось? Чего не хватает?", "fb_send": "Отправить", "cons_title": "Добро пожаловать", "cons_body": "ПроКомьюнити помогает новичкам-курьерам пережить первые недели: наставник, живая карта загруженности и поиск напарника. Продолжая, вы принимаете пользовательское соглашение и обработку данных, включая геолокацию — только с вашего согласия.", "cons_read": "Читать соглашение", "cons_check": "Я принимаю пользовательское соглашение", "cons_go": "Принять и продолжить", "tour_1": "Переключатель ролей: здесь видно все три стороны сервиса.", "tour_2": "«Путь» — экран новичка: сколько дней позади и чек-лист недели.", "tour_3": "«Плотность» — живая карта: где очередь, а где свободно.", "tour_4": "«Напарник» — поиск для совместной аренды и смен.", "tour_5": "Конверт — оставить отзыв команде.", "next": "Далее", "skip": "Пропустить", "done": "Понятно", "lang_title": "Язык"}, "en": {"demo": "View as", "r_newbie": "Newbie", "r_mentor": "Mentor", "r_partner": "Partner", "t_path": "Path", "t_density": "Density", "t_partner": "Buddy", "of30": "of 30 days", "first30": "first 30 days", "month_hard": "The first month is the hardest. We go together.", "mentor_on": "Your mentor · online", "write": "Message", "week1": "First week", "d_title": "Where it's crowded", "d_sub": "Live signal from peers. Red — a queue, green — free.", "add_signal": "Add a signal", "p_title": "Looking for a buddy", "p_sub": "Legally share rentals and shifts. Everyone under their own account.", "add_card": "Create a card", "m_title": "My newbies", "add_mentee": "Add a newbie", "pt_title": "Retention economics", "pt_sub": "Mentored vs control group. The key number is the retention uplift.", "reviews": "Reviews", "fb_title": "Leave feedback", "fb_note": "Your feedback helps us improve.", "fb_ph": "What did you like? What's missing?", "fb_send": "Send", "cons_title": "Welcome", "cons_body": "ProCommunity helps newbie couriers survive their first weeks: a mentor, a live density map and buddy search. By continuing you accept the user agreement and data processing, including geolocation — only with your consent.", "cons_read": "Read the agreement", "cons_check": "I accept the user agreement", "cons_go": "Accept and continue", "tour_1": "Role switch: see all three sides of the service here.", "tour_2": "“Path” — the newbie screen: days passed and the first-week checklist.", "tour_3": "“Density” — a live map: where it's busy and where it's free.", "tour_4": "“Buddy” — search for shared rentals and shifts.", "tour_5": "The envelope — leave feedback for the team.", "next": "Next", "skip": "Skip", "done": "Got it", "lang_title": "Language"}, "uz": {"demo": "Ko‘rinish", "r_newbie": "Yangi", "r_mentor": "Ustoz", "r_partner": "Hamkor", "t_path": "Yo‘l", "t_density": "Zichlik", "t_partner": "Sherik", "of30": "30 kundan", "first30": "birinchi 30 kun", "month_hard": "Birinchi oy eng og‘iri. Birga o‘tamiz.", "mentor_on": "Ustozing · onlayn", "write": "Yozish", "week1": "Birinchi hafta", "d_title": "Hozir qayer gavjum", "d_sub": "Hamkasblardan jonli signal. Qizil — navbat, yashil — bo‘sh.", "add_signal": "Signal qoldirish", "p_title": "Sherik izlayapman", "p_sub": "Ijara va smenani qonuniy bo‘lishing. Har kim o‘z akkaunti ostida.", "add_card": "Kartochka yaratish", "m_title": "Mening yangilarim", "add_mentee": "Yangi qo‘shish", "pt_title": "Ushlab qolish iqtisodi", "pt_sub": "Ustozli guruh vs nazorat guruhi. Asosiysi — ushlab qolish o‘sishi.", "reviews": "Sharhlar", "fb_title": "Fikr qoldirish", "fb_note": "Fikringiz xizmatni yaxshilaydi.", "fb_ph": "Nima yoqdi? Nima yetishmadi?", "fb_send": "Yuborish", "cons_title": "Xush kelibsiz", "cons_body": "ProCommunity yangi kuryerlarga birinchi haftalarni yengishga yordam beradi: ustoz, jonli zichlik xaritasi va sherik izlash. Davom etsangiz, foydalanuvchi shartnomasi va ma’lumotlarni, jumladan geolokatsiyani — faqat roziligingiz bilan — qayta ishlashga rozilik bildirasiz.", "cons_read": "Shartnomani o‘qish", "cons_check": "Foydalanuvchi shartnomasini qabul qilaman", "cons_go": "Qabul qilib davom etish", "tour_1": "Rol almashtirgich: bu yerda xizmatning uch tomonini ko‘rasiz.", "tour_2": "“Yo‘l” — yangi ekrani: o‘tgan kunlar va hafta ro‘yxati.", "tour_3": "“Zichlik” — jonli xarita: qayer band, qayer bo‘sh.", "tour_4": "“Sherik” — birga ijara va smena izlash.", "tour_5": "Konvert — jamoaga fikr qoldirish.", "next": "Keyingi", "skip": "O‘tkazish", "done": "Tushunarli", "lang_title": "Til"}, "tg": {"demo": "Намоиш ҳамчун", "r_newbie": "Навкор", "r_mentor": "Устод", "r_partner": "Шарик", "t_path": "Роҳ", "t_density": "Зичӣ", "t_partner": "Шарик", "of30": "аз 30 рӯз", "first30": "30 рӯзи аввал", "month_hard": "Моҳи аввал аз ҳама сахттарин аст. Якҷоя мегузарем.", "mentor_on": "Устоди ту · онлайн", "write": "Навиштан", "week1": "Ҳафтаи аввал", "d_title": "Ҳозир куҷо серодам аст", "d_sub": "Сигнали зинда аз ҳамкорон. Сурх — навбат, сабз — озод.", "add_signal": "Сигнал гузоштан", "p_title": "Шарик меҷӯям", "p_sub": "Иҷора ва навбатро қонунӣ тақсим кунед. Ҳар кас бо ҳисоби худ.", "add_card": "Кортча сохтан", "m_title": "Навкорони ман", "add_mentee": "Навкор илова кардан", "pt_title": "Иқтисоди нигоҳдорӣ", "pt_sub": "Гурӯҳи устоддор бар зидди назоратӣ. Муҳим — афзоиши нигоҳдорӣ.", "reviews": "Шарҳҳо", "fb_title": "Шарҳ гузоштан", "fb_note": "Шарҳи шумо хизматро беҳтар мекунад.", "fb_ph": "Чӣ маъқул шуд? Чӣ намерасид?", "fb_send": "Фиристодан", "cons_title": "Хуш омадед", "cons_body": "ProCommunity ба навкорон-курйерҳо кӯмак мекунад, ки ҳафтаҳои аввалро гузаронанд: устод, харитаи зиндаи зичӣ ва ҷустуҷӯи шарик. Бо идома додан шумо шартномаи корбар ва коркарди маълумот, аз ҷумла ҷойгиршавӣ — танҳо бо розигии шумо — қабул мекунед.", "cons_read": "Хондани шартнома", "cons_check": "Ман шартномаи корбарро қабул мекунам", "cons_go": "Қабул ва идома", "tour_1": "Ивазкунандаи нақш: дар ин ҷо ҳар се тарафи хизматро мебинед.", "tour_2": "«Роҳ» — экрани навкор: рӯзҳои гузашта ва рӯйхати ҳафта.", "tour_3": "«Зичӣ» — харитаи зинда: куҷо банд, куҷо озод.", "tour_4": "«Шарик» — ҷустуҷӯ барои иҷора ва навбати муштарак.", "tour_5": "Лифофа — гузоштани шарҳ ба даста.", "next": "Баъдӣ", "skip": "Гузарондан", "done": "Фаҳмо", "lang_title": "Забон"}, "ar": {"demo": "عرض كـ", "r_newbie": "مبتدئ", "r_mentor": "مرشد", "r_partner": "شريك", "t_path": "المسار", "t_density": "الكثافة", "t_partner": "شريك", "of30": "من 30 يومًا", "first30": "أول 30 يومًا", "month_hard": "الشهر الأول هو الأصعب. نمضي معًا.", "mentor_on": "مرشدك · متصل", "write": "مراسلة", "week1": "الأسبوع الأول", "d_title": "أين الازدحام الآن", "d_sub": "إشارة حية من الزملاء. الأحمر — طابور، الأخضر — فارغ.", "add_signal": "إضافة إشارة", "p_title": "أبحث عن شريك", "p_sub": "تقاسموا الإيجار والورديات بشكل قانوني. كلٌّ بحسابه الخاص.", "add_card": "إنشاء بطاقة", "m_title": "المبتدئون لديّ", "add_mentee": "إضافة مبتدئ", "pt_title": "اقتصاد الاحتفاظ", "pt_sub": "مجموعة الإرشاد مقابل الضبط. الرقم الأهم هو زيادة الاحتفاظ.", "reviews": "التقييمات", "fb_title": "اترك تقييمًا", "fb_note": "رأيك يساعدنا على التحسّن.", "fb_ph": "ما الذي أعجبك؟ وما الذي ينقص؟", "fb_send": "إرسال", "cons_title": "مرحبًا بك", "cons_body": "يساعد ProCommunity السعاة المبتدئين على تجاوز أسابيعهم الأولى: مرشد، وخريطة كثافة حية، والبحث عن شريك. بالمتابعة فإنك توافق على اتفاقية المستخدم ومعالجة البيانات، بما في ذلك الموقع — بموافقتك فقط.", "cons_read": "قراءة الاتفاقية", "cons_check": "أوافق على اتفاقية المستخدم", "cons_go": "موافقة ومتابعة", "tour_1": "مبدّل الأدوار: هنا ترى الجوانب الثلاثة للخدمة.", "tour_2": "«المسار» — شاشة المبتدئ: الأيام المنقضية وقائمة الأسبوع.", "tour_3": "«الكثافة» — خريطة حية: أين الازدحام وأين المتاح.", "tour_4": "«الشريك» — البحث عن إيجار وورديات مشتركة.", "tour_5": "الظرف — اترك تقييمًا للفريق.", "next": "التالي", "skip": "تخطٍّ", "done": "فهمت", "lang_title": "اللغة"}};
+
+const I18N2 = {"ru": {"step_standards": "Прочитать стандарты сервиса", "step_slot": "Выйти на первый слот", "step_order": "Выполнить первый заказ", "step_demand": "Разобраться с картой спроса", "step_payout": "Получить первую выплату", "st_ret": "удержан", "st_risk": "риск", "st_prog": "в процессе", "m_newbies": "новичков", "m_inway": "ещё в пути. Нажми, чтобы отметить прогресс.", "up_cap": "прирост удержания к контролю за первые 30 дней", "v_ok": "● Сигнал есть — механика работает", "v_no": "○ Ниже порога — разбираем", "c_ment": "Наставничество", "c_ctrl": "Контроль", "gap": "разрыв", "pp": "п.п.", "s_ret_m": "удержано (наставничество)", "s_ret_c": "удержано (контроль)", "money_1": "Удержано сверх контроля:", "money_2": "Каждый сэкономил бизнесу ≥", "money_3": "на повторном привлечении (реф-бонус 22–50 тыс. ₽).", "pt_note": "Данные пилота обновляются вживую при отметках наставника.", "couriers": "курьеров", "wait": "ждут ~", "min": "мин", "add_newbie_t": "Новый новичок", "ph_name": "Имя", "ph_handle": "Ник в Telegram (без @)", "btn_add_mentee": "Добавить и закрепить за собой", "add_signal_t": "Сигнал плотности", "signal_hint": "Точка ставится по центру карты или по геолокации.", "ph_point": "Точка (ТЦ, ресторан, зона)", "ph_couriers": "Сколько курьеров стоит", "ph_wait": "Ожидание, мин", "btn_geo": "📍 Определить по геолокации", "ph_buddy_type": "Что делим (велосипед / самокат / смены)", "ph_buddy_area": "Район и время"}, "en": {"step_standards": "Read the service standards", "step_slot": "Go online for the first slot", "step_order": "Complete the first order", "step_demand": "Learn the demand map", "step_payout": "Get the first payout", "st_ret": "retained", "st_risk": "at risk", "st_prog": "in progress", "m_newbies": "newbies", "m_inway": "still on the way. Tap to mark progress.", "up_cap": "retention uplift vs control over the first 30 days", "v_ok": "● Signal confirmed — it works", "v_no": "○ Below threshold — reviewing", "c_ment": "Mentored", "c_ctrl": "Control", "gap": "gap", "pp": "pp", "s_ret_m": "retained (mentored)", "s_ret_c": "retained (control)", "money_1": "Retained above control:", "money_2": "Each saved the business ≥", "money_3": "on re-acquisition (referral bonus 22–50k ₽).", "pt_note": "Data updates live as the mentor marks progress.", "couriers": "couriers", "wait": "waiting ~", "min": "min", "add_newbie_t": "New newbie", "ph_name": "Name", "ph_handle": "Telegram handle (no @)", "btn_add_mentee": "Add and assign to me", "add_signal_t": "Density signal", "signal_hint": "The point is placed at the map center or by geolocation.", "ph_point": "Point (mall, restaurant, zone)", "ph_couriers": "How many couriers are waiting", "ph_wait": "Wait, min", "btn_geo": "📍 Use my location", "ph_buddy_type": "What to share (bike / scooter / shifts)", "ph_buddy_area": "Area and time"}, "uz": {"step_standards": "Xizmat standartlarini o‘qish", "step_slot": "Birinchi slotga chiqish", "step_order": "Birinchi buyurtmani bajarish", "step_demand": "Talab xaritasini o‘rganish", "step_payout": "Birinchi to‘lovni olish", "st_ret": "ushlab qolindi", "st_risk": "xavf", "st_prog": "jarayonda", "m_newbies": "yangi", "m_inway": "hali yo‘lda. Belgilash uchun bosing.", "up_cap": "birinchi 30 kunda nazoratga nisbatan ushlab qolish o‘sishi", "v_ok": "● Signal bor — ishlayapti", "v_no": "○ Chegaradan past — tahlil qilinmoqda", "c_ment": "Ustozli", "c_ctrl": "Nazorat", "gap": "farq", "pp": "f.p.", "s_ret_m": "ushlab qolindi (ustozli)", "s_ret_c": "ushlab qolindi (nazorat)", "money_1": "Nazoratdan ortiq ushlab qolindi:", "money_2": "Har biri biznesga kamida", "money_3": "qayta jalb qilishda tejadi (referal bonus 22–50 ming ₽).", "pt_note": "Ma’lumot ustoz belgilaganda jonli yangilanadi.", "couriers": "kuryer", "wait": "kutmoqda ~", "min": "daq", "add_newbie_t": "Yangi kuryer", "ph_name": "Ism", "ph_handle": "Telegram nik (@ siz)", "btn_add_mentee": "Qo‘shish va o‘zimga biriktirish", "add_signal_t": "Zichlik signali", "signal_hint": "Nuqta xarita markazida yoki geolokatsiya bo‘yicha qo‘yiladi.", "ph_point": "Nuqta (savdo markazi, restoran, zona)", "ph_couriers": "Nechta kuryer turibdi", "ph_wait": "Kutish, daq", "btn_geo": "📍 Joylashuvim bo‘yicha", "ph_buddy_type": "Nimani bo‘lishamiz (velosiped / samokat / smena)", "ph_buddy_area": "Hudud va vaqt"}, "tg": {"step_standards": "Хондани стандартҳои хизмат", "step_slot": "Ба слоти аввал баромадан", "step_order": "Иҷрои фармоиши аввал", "step_demand": "Омӯхтани харитаи талабот", "step_payout": "Гирифтани пардохти аввал", "st_ret": "нигоҳ дошта шуд", "st_risk": "хатар", "st_prog": "дар ҷараён", "m_newbies": "навкор", "m_inway": "ҳанӯз дар роҳ. Барои қайд зер кунед.", "up_cap": "афзоиши нигоҳдорӣ нисбат ба назоратӣ дар 30 рӯзи аввал", "v_ok": "● Сигнал ҳаст — кор мекунад", "v_no": "○ Аз ҳадди ақал поён — таҳлил", "c_ment": "Устоддор", "c_ctrl": "Назоратӣ", "gap": "фарқ", "pp": "ф.х.", "s_ret_m": "нигоҳ дошта шуд (устоддор)", "s_ret_c": "нигоҳ дошта шуд (назоратӣ)", "money_1": "Зиёда аз назорат нигоҳ дошта шуд:", "money_2": "Ҳар яке ба бизнес на камтар аз", "money_3": "дар ҷалби такрорӣ сарфа кард (бонуси референс 22–50 ҳазор ₽).", "pt_note": "Маълумот ҳангоми қайди устод зинда навсозӣ мешавад.", "couriers": "курйер", "wait": "интизор ~", "min": "дақ", "add_newbie_t": "Навкори нав", "ph_name": "Ном", "ph_handle": "Ники Telegram (бе @)", "btn_add_mentee": "Илова ва ба худ вобаста кардан", "add_signal_t": "Сигнали зичӣ", "signal_hint": "Нуқта дар маркази харита ё аз рӯи ҷойгиршавӣ гузошта мешавад.", "ph_point": "Нуқта (маркази савдо, тарабхона, минтақа)", "ph_couriers": "Чанд курйер истодааст", "ph_wait": "Интизорӣ, дақ", "btn_geo": "📍 Аз рӯи ҷойгиршавии ман", "ph_buddy_type": "Чиро тақсим мекунем (велосипед / самокат / навбат)", "ph_buddy_area": "Минтақа ва вақт"}, "ar": {"step_standards": "اقرأ معايير الخدمة", "step_slot": "ابدأ أول فترة عمل", "step_order": "أكمل أول طلب", "step_demand": "تعرّف على خريطة الطلب", "step_payout": "احصل على أول دفعة", "st_ret": "محتَفَظ به", "st_risk": "معرّض للخطر", "st_prog": "قيد التقدّم", "m_newbies": "مبتدئ", "m_inway": "ما زال في الطريق. اضغط للتحديد.", "up_cap": "زيادة الاحتفاظ مقابل الضبط خلال أول 30 يومًا", "v_ok": "● إشارة مؤكدة — يعمل", "v_no": "○ دون الحد — قيد المراجعة", "c_ment": "مع إرشاد", "c_ctrl": "ضبط", "gap": "الفارق", "pp": "ن.م.", "s_ret_m": "محتفظ به (مع إرشاد)", "s_ret_c": "محتفظ به (ضبط)", "money_1": "محتفظ به فوق الضبط:", "money_2": "وفّر كلٌّ منهم للعمل ما لا يقل عن", "money_3": "في إعادة الاستقطاب (مكافأة إحالة 22–50 ألف ₽).", "pt_note": "تتحدّث البيانات مباشرة عند تحديد المرشد.", "couriers": "ساعٍ", "wait": "ينتظرون ~", "min": "د", "add_newbie_t": "مبتدئ جديد", "ph_name": "الاسم", "ph_handle": "معرّف تيليجرام (بدون @)", "btn_add_mentee": "إضافة وتعييني مرشدًا", "add_signal_t": "إشارة كثافة", "signal_hint": "تُوضع النقطة في وسط الخريطة أو حسب الموقع.", "ph_point": "النقطة (مركز تسوّق، مطعم، منطقة)", "ph_couriers": "كم عدد الساعين الواقفين", "ph_wait": "الانتظار، د", "btn_geo": "📍 حسب موقعي", "ph_buddy_type": "ما نتقاسمه (دراجة / سكوتر / ورديات)", "ph_buddy_area": "المنطقة والوقت"}};
+Object.keys(I18N2).forEach(function(l){ I18N[l]=Object.assign(I18N[l]||{}, I18N2[l]); });
+const I18N3 = {"ru": {"ob_who": "Кто ты?", "ob_who_sub": "Выбери роль — потом её не меняем.", "ob_newbie": "Я новичок", "ob_newbie_sub": "Первые недели. Нужен наставник и поддержка.", "ob_mentor": "Я наставник", "ob_mentor_sub": "Опытный. Готов вести новичков.", "ob_city": "Твой город", "ob_city_sub": "Покажем плотность и напарников рядом.", "ob_geo": "📍 Определить автоматически", "ob_or": "или выбери из списка", "ob_detecting": "Определяю…", "ob_geo_fail": "Не удалось определить — выбери из списка.", "t_home": "Подопечные", "t_profile": "Профиль", "pr_newbie": "Новичок", "pr_mentor": "Наставник", "pr_day30": "день из 30", "pr_week1prog": "прогресс первой недели", "pr_mentor_l": "Наставник", "pr_no_mentor": "скоро назначится", "pr_mentees": "подопечных", "pr_retained_l": "доведено до устойчивости", "pr_city_l": "Город", "pr_change_city": "Сменить", "pr_ret_badge": "удержан", "gps_hint": "Включите геолокацию, чтобы видеть плотность рядом.", "q_title": "Новички без наставника", "q_empty": "В твоём городе пока нет новичков в очереди.", "take": "Взять", "nb_no_mentor": "Наставник скоро назначится. Первые дни уже можно идти по чек-листу."}, "en": {"ob_who": "Who are you?", "ob_who_sub": "Pick a role — you won't change it later.", "ob_newbie": "I'm a newbie", "ob_newbie_sub": "First weeks. I need a mentor and support.", "ob_mentor": "I'm a mentor", "ob_mentor_sub": "Experienced. Ready to guide newbies.", "ob_city": "Your city", "ob_city_sub": "We'll show density and buddies nearby.", "ob_geo": "📍 Detect automatically", "ob_or": "or pick from the list", "ob_detecting": "Detecting…", "ob_geo_fail": "Couldn't detect — pick from the list.", "t_home": "Newbies", "t_profile": "Profile", "pr_newbie": "Newbie", "pr_mentor": "Mentor", "pr_day30": "day of 30", "pr_week1prog": "first-week progress", "pr_mentor_l": "Mentor", "pr_no_mentor": "assigned soon", "pr_mentees": "newbies", "pr_retained_l": "reached stability", "pr_city_l": "City", "pr_change_city": "Change", "pr_ret_badge": "retained", "gps_hint": "Enable location to see density nearby.", "q_title": "Newbies without a mentor", "q_empty": "No newbies in the queue in your city yet.", "take": "Take", "nb_no_mentor": "A mentor will be assigned soon. You can already start the checklist."}};
+Object.keys(I18N3).forEach(function(l){ I18N[l]=Object.assign(I18N[l]||{}, I18N3[l]); });
+const I18N4 = {"ru": {"demo": "Демо · выбери роль", "tour_d1": "Это демо для жюри. Переключай роль здесь — посмотри продукт глазами и новичка, и наставника.", "tour_d2": "«Путь» новичка: первые 30 дней и чек-лист ключевых шагов, наставник на связи. Половина новичков уходит в первый месяц — здесь мы их удерживаем.", "tour_d3": "«Плотность» — живая карта: где сейчас много курьеров и где долго ждать. Обновляется вживую.", "tour_d4": "«Напарник» — легальный поиск, с кем выйти вместе или поделить смену. Без передачи заказов и нарушения правил.", "tour_d5": "Вид наставника: подопечные и их прогресс. Наставник получает бонус за доведённых новичков.", "tour_d6": "Панель для бизнеса: сколько новичков удержано и сколько это сэкономило на повторном найме. Здесь и деньги.", "tour_d7": "Понравилось или есть замечания? Оставь отзыв — кнопка вверху. Спасибо, что смотрите!", "tour_p1": "Твой путь: первые 30 дней и чек-лист. Отмечай шаги — прогресс копится здесь.", "tour_m1": "Твои подопечные и их прогресс. Бери новичков из очереди и веди их первые недели.", "tour_r2": "«Плотность» — карта рядом. Нажми +, наведи прицел на место и оставь сигнал, сколько курьеров стоит.", "tour_r3": "«Напарник» — найди, с кем выйти в твоём городе.", "tour_r4": "«Профиль» — твой прогресс, наставник и смена города.", "tour_r5": "Есть идея или баг? Оставь отзыв — кнопка вверху."}, "en": {"demo": "Demo · pick a role", "tour_d1": "This is a demo for the jury. Switch roles here — see the product as a newbie and as a mentor.", "tour_d2": "The newbie 'Path': first 30 days, a checklist of key steps, mentor on call. Half of newbies quit in the first month — this is where we retain them.", "tour_d3": "'Density' — a live map: where couriers are dense and where the wait is long. Updates live.", "tour_d4": "'Buddy' — a legal way to find someone to go out with or share a shift. No order transfers, no rule-breaking.", "tour_d5": "Mentor's view: mentees and their progress. Mentors earn a bonus for newbies who stick.", "tour_d6": "Business dashboard: how many newbies were retained and how much that saved on re-hiring. The money side.", "tour_d7": "Liked it or have notes? Leave feedback — button at the top. Thanks for reviewing!", "tour_p1": "Your path: first 30 days and a checklist. Tick steps — progress adds up here.", "tour_m1": "Your mentees and their progress. Take newbies from the queue and guide their first weeks.", "tour_r2": "'Density' — the map near you. Tap +, aim the crosshair and drop a signal on how many couriers are there.", "tour_r3": "'Buddy' — find someone to go out with in your city.", "tour_r4": "'Profile' — your progress, mentor, and changing your city.", "tour_r5": "Idea or bug? Leave feedback — button at the top."}};
+Object.keys(I18N4).forEach(function(l){ I18N[l]=Object.assign(I18N[l]||{}, I18N4[l]); });
+const I18N5={"ru":{"r_business":"Бизнес"},"en":{"r_business":"Business"}};
+Object.keys(I18N5).forEach(function(l){ I18N[l]=Object.assign(I18N[l]||{}, I18N5[l]); });
+
+
+
+const TOS_HTML = "<b>Пользовательское соглашение · ПроКомьюнити</b>\n\n<b>1. О сервисе.</b> ПроКомьюнити — независимый пилотный сервис для адаптации новичков-курьеров: наставничество, карта загруженности районов и поиск напарника для совместной аренды/смен. Сервис <b>не является</b> официальным продуктом Яндекса и не аффилирован с ним.\n\n<b>2. Что сервис НЕ делает.</b> Сервис не передаёт заказы или аккаунты между пользователями и не предполагает работу под чужим аккаунтом. Всё в рамках правил площадок доставки.\n\n<b>3. Данные.</b> Мы обрабатываем: идентификатор и имя из Telegram, ваши действия в приложении, оставленные отзывы. Геолокация запрашивается <b>только</b> при явном действии (кнопка «по геолокации») и с вашего согласия; точные координаты отдельных пользователей не публикуются, данные о плотности показываются агрегированно.\n\n<b>4. Как используются данные.</b> Для работы сервиса и обезличенной статистики удержания. Отзывы могут быть прочитаны командой и использованы для улучшения продукта.\n\n<b>5. Самозанятость и налоги.</b> Вопросы статуса самозанятого, налогов и отношений с площадками — ответственность самого пользователя.\n\n<b>6. Статус пилота.</b> Это MVP на стадии проверки: возможны ограничения и перерывы, данные могут обнуляться при обновлениях.\n\n<b>7. Согласие.</b> Продолжая пользоваться приложением, вы подтверждаете согласие с настоящими условиями.\n\nКонтакт для вопросов и удаления данных: укажите здесь ваш @-контакт.";
+let LANG = (function(){ try{ return localStorage.getItem('procom_lang')||'ru'; }catch(e){ return 'ru'; } })();
+function t(k){ return (I18N[LANG]&&I18N[LANG][k]) || I18N.ru[k] || k; }
+function setLang(l){ LANG=l; try{ localStorage.setItem('procom_lang',l); }catch(e){}
+  document.getElementById('app').setAttribute('dir', l==='ar'?'rtl':'ltr'); applyStaticI18n(); render(); }
+function applyStaticI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent=t(el.dataset.i18n); });
+}
+
+
+const tg = window.Telegram && window.Telegram.WebApp;
+function initTg(){ if(!tg) return; try{ tg.ready(); tg.expand();
+    tg.disableVerticalSwipes && tg.disableVerticalSwipes();
+  tg.setHeaderColor && tg.setHeaderColor("#192A43"); tg.setBackgroundColor && tg.setBackgroundColor("#EDF0F5"); }catch(e){} }
+function haptic(k){ try{ tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred(k||"light"); }catch(e){} }
+function initData(){ return (tg && tg.initData) || ""; }
+
+let UI = { role:"newbie", tab:"path" };
+let DATA = null, mapInstance=null, pendingGeo=null, fbRating=0, pickCoords=null;
+
+async function api(path, opts){
+  const r = await fetch(path, Object.assign({headers:{
+    "Content-Type":"application/json", "Authorization":"tma "+initData()
+  }}, opts||{}));
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r.json();
+}
+async function load(){ DATA = await api("/api/snapshot"); }
+function track(ev, meta){ try{ fetch("/api/track",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"tma "+initData()},body:JSON.stringify({event:ev,meta:meta||null})}); }catch(e){} }
+async function act(promise){ try{ await promise; await reload(); render(); }catch(e){ console.error(e); } }
+
+const $ = s => document.querySelector(s);
+const esc = s => (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const avaColor = id => AVA[[...String(id)].reduce((a,c)=>a+c.charCodeAt(0),0)%AVA.length];
+const densColor = c => c>=5 ? "#E03131" : (c>=2 ? "#F59F00" : "#2F9E44");
+const menteeById = id => (DATA.mentees||[]).find(m=>m.id===id);
+
+/* ---------- render ---------- */
+function render(){
+  if(!DATA){ return; }
+  stopPolling();
+  if(RT) return renderRT();
+  document.querySelectorAll("#seg button").forEach(b=>b.classList.toggle("on",b.dataset.role===UI.role));
+  const tabs = $("#tabs");
+  if(UI.role==="newbie"){ tabs.style.display="flex"; renderTabs(); } else tabs.style.display="none";
+  if(UI.role==="newbie") $("#screen").innerHTML = viewNewbie();
+  else if(UI.role==="mentor") $("#screen").innerHTML = viewMentor();
+  else $("#screen").innerHTML = viewPartner();
+  // enhancers
+  if(UI.role==="newbie" && UI.tab==="path") enhanceHero();
+  if(UI.role==="newbie" && UI.tab==="density") initMap();
+  if(UI.role==="partner") enhancePartner();
+  const _sc=$("#screen"); if(UI._nav){ _sc.scrollTop=0; _sc.classList.remove("nav-in"); void _sc.offsetWidth; _sc.classList.add("nav-in"); UI._nav=false; }
+}
+function renderTabs(){
+  const tb=(id,lbl,path)=>`<button data-tab="${id}" class="${UI.tab===id?'on':''}">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>${lbl}</button>`;
+  $("#tabs").innerHTML =
+    tb("path",t("t_path"),"<circle cx='12' cy='12' r='9'/><path d='M12 8v4l3 2'/>")+
+    tb("density",t("t_density"),"<path d='M3 11l9-8 9 8'/><path d='M5 10v10h14V10'/>")+
+    tb("partners",t("t_partner"),"<circle cx='9' cy='8' r='3'/><circle cx='17' cy='10' r='2.5'/><path d='M3 20c0-3 3-5 6-5s6 2 6 5'/>");
+}
+
+/* ===== NEWBIE ===== */
+const CHECK = "<svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='#fff' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6L9 17l-5-5'/></svg>";
+function viewNewbie(){
+  if(UI.tab==="density") return tabDensity();
+  if(UI.tab==="partners") return tabPartners();
+  const me = DATA.me; if(!me) return "<div class='empty'>Нет данных</div>";
+  const p = Math.round(me.progress*100);
+  const rows = STEPS.map(s=>`<div class="chk ${me.checklist[s.k]?'on':''}" data-step="${s.k}" role="checkbox" aria-checked="${me.checklist[s.k]}" tabindex="0">
+      <span class="box">${CHECK}</span><span class="t">${t('step_'+s.k)}</span></div>`).join("");
+  const name = esc((DATA.user && DATA.user.name) || me.name || "");
+  return `
+    <div class="hero">
+      <div class="eyebrow">${name?name+" · ":""}${t('first30')}</div>
+      <div class="ring">
+        <svg viewBox="0 0 210 210">
+          <circle class="ring-bg" cx="105" cy="105" r="90"></circle>
+          <circle class="ring-fg" cx="105" cy="105" r="90" data-frac="${me.day/30}"></circle>
+        </svg>
+        <div class="ring-center"><div class="rd">${me.day}</div><div class="rl">${t('of30')}</div></div>
+      </div>
+      <div class="herofoot">${t('month_hard')}</div>
+    </div>
+    ${me.mentor ? `<div class="card">
+      <div class="mentor">
+        <div class="ava" style="background:${avaColor(me.mentor.id)}">${me.mentor.name[0]}</div>
+        <div class="grow"><div class="n">${esc(me.mentor.name)}</div><div class="r">${t('mentor_on')}</div></div>
+        ${RT ? `<a class="btn ghost" href="https://t.me/${esc(me.mentor.handle||'')}" target="_blank" rel="noopener">${t('write')}</a>` : `<button class="btn ghost" data-demo-note>${t('write')}</button>`}
+      </div>
+    </div>` : `<div class="card"><div class="r" style="color:var(--muted);font-size:13.5px;line-height:1.5">${t('nb_no_mentor')}</div></div>`}
+    <div class="card">
+      <div class="cardhead"><h3>${t('week1')}</h3><span class="pct">${p}%</span></div>
+      <div class="bar" style="margin-bottom:6px"><i style="width:${p}%"></i></div>
+      ${rows}
+    </div>`;
+}
+function enhanceHero(){
+  const fg = $(".ring-fg"); if(!fg) return;
+  const r=90, C=2*Math.PI*r, frac=parseFloat(fg.dataset.frac)||0;
+  fg.style.strokeDasharray=C;
+  if(RMOTION){ fg.style.strokeDashoffset=C*(1-frac); return; }
+  fg.style.strokeDashoffset=C;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ fg.style.strokeDashoffset=C*(1-frac); }));
+}
+function densityItems(){
+  return (DATA.density||[]).length ? DATA.density.map(x=>`<div class="sig">
+      <div class="p"><span class="dotc" style="background:${densColor(x.couriers)}"></span>${esc(x.point)}</div>
+      <div class="d">${x.couriers} ${t('couriers')} · ${t('wait')}${x.wait} ${t('min')} · ${esc(x.ago)}</div></div>`).join("")
+    : `<div class="empty">Пока тихо. Оставь первый сигнал.</div>`;
+}
+function tabDensity(){
+  const mapBlock = (typeof L!=="undefined")
+    ? `<div class="mapwrap"><div id="map"></div><div class="livepill"><span class="livedot"></span>вживую</div>
+      <div class="crosshair"><div class="ring2"></div><div class="dot2"></div></div>
+      <div class="pickbar"><span class="pt">Наведите центр на место</span><span class="pbtns"><button class="cancel" data-pick-cancel>Отмена</button><button class="ok" data-pick-confirm>Здесь</button></span></div></div>`
+    : `<div class="fallback">Карта загрузится при подключении к интернету.<br>Ниже — список сигналов.</div>`;
+  return `<h1 class="brand">${t('d_title')}</h1>
+    <p class="sub">${t('d_sub')}</p>
+    ${mapBlock}
+    <div class="legend"><span><i style="background:#E03131"></i>≥5</span><span><i style="background:#F59F00"></i>2–4</span><span><i style="background:#2F9E44"></i>0–1</span></div>
+    <div class="card" id="denslist">${densityItems()}</div>
+    <button class="addbtn" data-pick-start>+ ${t('add_signal')}</button>`;
+}
+function tabPartners(){
+  const items = (DATA.requests||[]).length ? DATA.requests.map(x=>`<div class="sig">
+      <span class="tag">${esc(x.type)}</span>
+      <div class="p" style="margin-top:6px">${esc(x.area)}</div>
+      <div class="d">${esc(x.author)} · ${esc(x.ago)}</div></div>`).join("")
+    : `<div class="empty">Пока нет карточек. Создай первую.</div>`;
+  return `<h1 class="brand">${t('p_title')}</h1>
+    <p class="sub">${t('p_sub')}</p>
+    <div class="card">${items}</div>
+    <button class="addbtn" data-open="addRequest">+ ${t('add_card')}</button>`;
+}
+
+/* ===== MENTOR ===== */
+function viewMentor(){
+  const list = DATA.mentees||[];
+  const rows = list.map(n=>{
+    const p=Math.round(n.progress*100);
+    let st = n.retained? `<span class="status st-ok">${t('st_ret')}</span>`
+      : (p<40 ? `<span class="status st-risk">${t('st_risk')}</span>` : `<span class="status st-go">${t('st_prog')}</span>`);
+    return `<div class="row" data-open="mentee:${n.id}" style="cursor:pointer">
+      <div class="ava" style="background:${avaColor(n.id)};width:38px;height:38px;font-size:14px;border-radius:12px">${n.name[0]}</div>
+      <div class="grow"><div class="nm">${esc(n.name)}</div>
+        <div class="meta">День ${n.day}/30 · ${p}%</div>
+        <div class="mini-bar"><i style="width:${p}%"></i></div></div>
+      ${st}</div>`;}).join("");
+  const active = list.filter(n=>!n.retained).length;
+  return `<h1 class="brand">${t('m_title')}</h1>
+    <p class="sub">${list.length} ${t('m_newbies')} · ${active} ${t('m_inway')}</p>
+    <div class="card">${rows}</div>
+    ${RT ? rtQueueBlock() : `<button class="addbtn" data-open="addMentee">+ ${t('add_mentee')}</button>`}`;
+}
+
+/* ===== PARTNER ===== */
+function viewPartner(){
+  const s=DATA.stats, ok=s.uplift>=15;
+  const cmp=(lbl,val,color,cls)=>`<div class="cmp">
+      <div class="lg"><span>${lbl}</span><b>${Math.round(val*100)}%</b></div>
+      <div class="cmpbar"><i class="${cls}" data-w="${Math.round(val*100)}" style="background:${color}"></i></div></div>`;
+  return `<h1 class="brand">${t('pt_title')}</h1>
+    <p class="sub">${t('pt_sub')}</p>
+    <div class="kpi">
+      <div class="num" id="upnum">${(s.uplift>0?'+':'')+Math.round(s.uplift)}</div>
+      <div class="cap">${t('up_cap')}</div>
+      <div class="verdict">${ok?t('v_ok'):t('v_no')}</div>
+    </div>
+    <div class="card">
+      ${cmp(t("c_ment"), s.mp, "var(--green)","c-m")}
+      ${cmp(t("c_ctrl"), s.cp, "#AEB4C2","c-c")}
+      <div class="gapchip">${t('gap')} +${s.uplift} ${t('pp')}</div>
+    </div>
+    <div class="grid2">
+      <div class="stat"><div class="v">${s.mr}/${s.m}</div><div class="k">${t('s_ret_m')}</div></div>
+      <div class="stat"><div class="v">${s.cr}/${s.c}</div><div class="k">${t('s_ret_c')}</div></div>
+    </div>
+    <div class="money">
+      <div class="v">≈ ${s.saved.toLocaleString("ru-RU")} ₽</div>
+      <div class="k">${t('money_1')} ${s.extra}. ${t('money_2')} ${s.fee.toLocaleString("ru-RU")} ₽ ${t('money_3')}</div>
+    </div>
+    ${partnerFeedback()}
+    <p class="note">${t('pt_note')}</p>`;
+}
+function countUp(el, to, dur){
+  if(RMOTION){ el.textContent=(to>0?'+':'')+to; return; }
+  const t0=performance.now();
+  (function step(t){ const p=Math.min(1,(t-t0)/dur); const v=to*(1-Math.pow(1-p,3));
+    el.textContent=(to>0?'+':'')+(Math.round(v*10)/10); if(p<1) requestAnimationFrame(step); })(t0);
+}
+function enhancePartner(){
+  const up=$("#upnum"); if(up) countUp(up, DATA.stats.uplift, 950);
+  document.querySelectorAll(".cmpbar > i").forEach(i=>{
+    const w=i.dataset.w+"%"; if(RMOTION){ i.style.width=w; return; }
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{ i.style.width=w; }));
+  });
+}
+
+/* ---------- map ---------- */
+function zPopup(z){ return "~"+z.couriers+" курьеров · ждут ~"+z.wait+" мин · "+z.reports+" сигн."; }
+let heatRef=null, sigGroup=null;
+function drawZones(){
+  if(!mapInstance || typeof L==="undefined") return;
+  if(heatRef){ try{mapInstance.removeLayer(heatRef);}catch(e){} heatRef=null; }
+  if(sigGroup){ try{mapInstance.removeLayer(sigGroup);}catch(e){} sigGroup=null; }
+  // тепловая подложка — только где скучкованы 2+ сигнала
+  const clusters = (DATA.zones||[]).filter(z=>z.reports>=2);
+  if(typeof L.heatLayer==="function" && clusters.length){
+    heatRef = L.heatLayer(clusters.map(z=>[z.lat,z.lng,Math.max(0.35,Math.min(1,z.couriers/8))]),
+      {radius:44, blur:34, maxZoom:17, minOpacity:0.35,
+       gradient:{0.2:"#37b24d",0.5:"#f59f00",0.75:"#fa5252",1.0:"#e03131"}}).addTo(mapInstance);
+  }
+  // точные сигналы: мягкий ореол + чёткая точка (вектор — не отваливается при зуме)
+  const sigs = (DATA.density||[]).filter(x=>x.lat!=null);
+  const halos = sigs.map(x=>L.circleMarker([x.lat,x.lng],{radius:16,stroke:false,fillColor:densColor(x.couriers),fillOpacity:.16,interactive:false}));
+  const dots = sigs.map(x=>{
+    const m=L.circleMarker([x.lat,x.lng],{radius:7,color:x.mine?"#192A43":"#fff",weight:x.mine?3:2,fillColor:densColor(x.couriers),fillOpacity:1});
+    m.on("click", ()=>openSignalSheet(x.id));
+    return m;
+  });
+  sigGroup = L.layerGroup(halos.concat(dots)).addTo(mapInstance);
+}
+function initMap(){
+  if(typeof L==="undefined") return;
+  const el=document.getElementById("map"); if(!el) return;
+  if(mapInstance){ try{mapInstance.remove();}catch(e){} mapInstance=null; heatRef=null; sigGroup=null; }
+  const _ctr=(RT&&DATA&&DATA.center)?{lat:DATA.center.lat,lng:DATA.center.lng,zoom:12}:CITY;
+  mapInstance=L.map(el,{zoomControl:true, attributionControl:false}).setView([_ctr.lat,_ctr.lng],_ctr.zoom||12);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(mapInstance);
+  drawZones();
+  mapInstance.on("zoomend", ()=>{ if(mapInstance) drawZones(); });
+  setTimeout(()=>{ if(mapInstance) mapInstance.invalidateSize(); },250);
+  startPolling();
+}
+/* ---- live polling (map only, every 25s) ---- */
+let pollTimer=null;
+function stopPolling(){ if(pollTimer){ clearInterval(pollTimer); pollTimer=null; } }
+function startPolling(){ stopPolling(); pollTimer=setInterval(pollTick, 25000); }
+async function refreshLive(){
+  try{ await reload(); drawZones();
+    const el=document.getElementById("denslist"); if(el) el.innerHTML=densityItems();
+  }catch(e){}
+}
+async function pollTick(){
+  if(document.hidden || UI.tab!=="density" || !mapInstance) return;
+  if($("#sheet").classList.contains("open")) return;
+  await refreshLive();
+}
+
+/* ---------- sheets ---------- */
+function openSheet(html){ $("#panel").innerHTML='<div class="grab"></div>'+html; $("#sheet").classList.add("open");
+  if(tg&&tg.BackButton){ try{ tg.BackButton.show(); tg.BackButton.onClick(backHandler);}catch(e){} } }
+function closeSheet(){ $("#sheet").classList.remove("open"); pendingGeo=null; pickCoords=null;
+  if(tg&&tg.BackButton){ try{ tg.BackButton.offClick(backHandler); tg.BackButton.hide();}catch(e){} } }
+function backHandler(){ closeSheet(); }
+function sheetMentee(id){
+  const n=menteeById(id); if(!n) return; const p=Math.round(n.progress*100);
+  const steps=STEPS.map(s=>`<div class="toggle"><span>${t('step_'+s.k)}</span><div class="sw ${n.checklist[s.k]?'on':''}" data-mstep="${id}:${s.k}"></div></div>`).join("");
+  openSheet(`
+    <div class="mentor" style="margin-bottom:14px">
+      <div class="ava" style="background:${avaColor(n.id)}">${n.name[0]}</div>
+      <div class="grow"><div class="n" style="font-size:17px;font-weight:700">${esc(n.name)}</div>
+        <div class="r" style="color:var(--muted);font-size:13px">День ${n.day}/30 · прогресс ${p}%</div></div></div>
+    <div class="card tight" style="box-shadow:none;border:1px solid var(--line)"><h3 style="margin:0 0 4px;font-size:14px">Чек-лист первой недели</h3>${steps}</div>
+    <div class="card tight" style="box-shadow:none;border:1px solid var(--line)"><h3 style="margin:0 0 4px;font-size:14px">Активность (для метрики удержания)</h3>
+      <div class="toggle"><span>Активен на 2-й неделе</span><div class="sw ${n.week2?'on':''}" data-flag="${id}:week2"></div></div>
+      <div class="toggle"><span>Активен на 30-й день</span><div class="sw ${n.d30?'on':''}" data-flag="${id}:d30"></div></div></div>
+    ${RT?`<button class="addbtn" data-release="${id}" style="margin-bottom:10px">Открепить новичка</button>`:""}<button class="btn pri block" data-close="1">Готово</button>`);
+}
+function sheetAdd(kind){
+  if(kind==="addMentee") openSheet(`<h3 style="margin:0 0 12px">${t('add_newbie_t')}</h3>
+    <input class="field" id="f_name" placeholder="${t('ph_name')}" /><input class="field" id="f_handle" placeholder="${t('ph_handle')}" />
+    <button class="btn pri block" data-add="mentee">${t('btn_add_mentee')}</button>`);
+  if(kind==="addDensity") openSheet(`<h3 style="margin:0 0 4px">${t('add_signal_t')}</h3>
+    <p class="note" style="margin:0 0 12px;text-align:left">${t('signal_hint')}</p>
+    <input class="field" id="f_p" placeholder="${t('ph_point')}" />
+    <input class="field" id="f_c" type="number" min="0" placeholder="${t('ph_couriers')}" />
+    <input class="field" id="f_w" type="number" min="0" placeholder="${t('ph_wait')}" />
+    <button class="btn ghost block" data-geo="1" style="margin-bottom:10px">${t('btn_geo')}</button>
+    <button class="btn pri block" data-add="density">${t('add_signal')}</button><p class="note" id="geonote"></p>`);
+  if(kind==="addRequest") openSheet(`<h3 style="margin:0 0 12px">${t('p_title')}</h3>
+    <input class="field" id="f_type" placeholder="${t('ph_buddy_type')}" />
+    <input class="field" id="f_area" placeholder="${t('ph_buddy_area')}" />
+    <button class="btn pri block" data-add="request">${t('add_card')}</button>`);
+}
+
+function partnerFeedback(){
+  const fb = DATA.feedback||[];
+  const list = fb.length ? fb.map(f=>`<div class="fbitem">
+      <div class="st">${"\u2605".repeat(f.rating)}${"\u2606".repeat(5-f.rating)}</div>
+      <div class="tx">${esc(f.text)||"<i style=color:var(--muted)>(без текста)</i>"}</div>
+      <div class="wh">${esc(f.user)} · ${esc(f.ago)}</div></div>`).join("")
+    : `<div class="empty">Пока нет отзывов. Кнопка-конверт вверху — оставить первый.</div>`;
+  return `<div class="card"><div class="cardhead"><h3>${t('reviews')}</h3><span class="pct">${fb.length}</span></div>${list}</div>`;
+}
+function sheetFeedback(){
+  fbRating=0;
+  openSheet(`<h3 style="margin:0 0 4px">${t('fb_title')}</h3>
+    <p class="note" style="margin:0 0 8px;text-align:left">${t('fb_note')}</p>
+    <div class="stars" id="stars">${[1,2,3,4,5].map(i=>`<span data-star="${i}">\u2605</span>`).join("")}</div>
+    <textarea class="ta" id="fb_text" placeholder="${t('fb_ph')}"></textarea>
+    <button class="btn pri block" data-add="feedback">${t('fb_send')}</button>`);
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click", e=>{
+  const _pr=e.target.closest("[data-pick-role]"); if(_pr){ postRole(_pr.dataset.pickRole); return; }
+  const _ps=e.target.closest("[data-pick-start]"); if(_ps){ haptic(); startPick(); return; }
+  const _sr=e.target.closest("[data-sig-refresh]"); if(_sr){ haptic(); sigAction(_sr.dataset.sigRefresh,"refresh"); return; }
+  const _dn=e.target.closest("[data-demo-note]"); if(_dn){ haptic(); if(tg&&tg.showAlert){ tg.showAlert("Демо: наставник условный. В реальном режиме здесь откроется чат в Telegram."); } return; }
+  const _sd=e.target.closest("[data-sig-del]"); if(_sd){ haptic(); sigAction(_sd.dataset.sigDel,"delete"); return; }
+  const _pcf=e.target.closest("[data-pick-confirm]"); if(_pcf){ haptic(); confirmPick(); return; }
+  const _pcx=e.target.closest("[data-pick-cancel]"); if(_pcx){ cancelPick(); return; }
+  const _gc=e.target.closest("[data-geo-city]"); if(_gc){ geoCity(); return; }
+  const _ci=e.target.closest("[data-city]"); if(_ci){ postCity(_ci.dataset.city, parseFloat(_ci.dataset.lat), parseFloat(_ci.dataset.lng)); return; }
+  const _tk=e.target.closest("[data-take]"); if(_tk){ haptic();
+    (async()=>{ try{ const r=await api("/api/rt/mentee/"+_tk.dataset.take+"/take",{method:"POST",body:"{}"});
+      if(r&&r.ok===false&&tg&&tg.showAlert){ tg.showAlert("Достигнут лимит активных подопечных."); }
+      await reload(); render(); }catch(e){console.error(e);} })(); return; }
+  const _rel=e.target.closest("[data-release]"); if(_rel){ haptic(); closeSheet(); act(api("/api/rt/mentee/"+_rel.dataset.release+"/release",{method:"POST",body:"{}"})); return; }
+  const _cc=e.target.closest("[data-change-city]"); if(_cc){ DATA.needs="city"; UI._nav=true; render(); return; }
+  if(e.target.closest("[data-gps-x]")){ gpsOff=false; render(); return; }
+  const rb=e.target.closest("#seg button"); if(rb){ haptic(); demoSwitch(rb.dataset.role); return; }
+  const tb=e.target.closest("[data-tab]"); if(tb){ UI.tab=tb.dataset.tab; UI._nav=true; haptic(); track("screen",{s:UI.tab}); render(); return; }
+  const chk=e.target.closest("[data-step]");
+  if(chk){ haptic(); track("checklist",{step:chk.dataset.step}); act(api(RT?"/api/rt/checklist":"/api/me/checklist",{method:"POST",body:JSON.stringify({step:chk.dataset.step})})); return; }
+  const open=e.target.closest("[data-open]");
+  if(open){ const v=open.dataset.open;
+    if(v==="feedback") sheetFeedback();
+    else if(v==="lang") sheetLang();
+    else if(v==="tour") startTour();
+    else if(v==="tos") sheetToS();
+    else if(v.startsWith("mentee:")) sheetMentee(+v.split(":")[1]);
+    else sheetAdd(v); return; }
+  const lg=e.target.closest("[data-lang]");
+  if(lg){ setLang(lg.dataset.lang); if(document.getElementById("consent").style.display!=="none") fillConsent(); else closeSheet(); return; }
+  const trn=e.target.closest("[data-tour]");
+  if(trn){ if(trn.dataset.tour==="skip") endTour(); else tourStep(tourIdx+1); return; }
+  if(e.target.closest("#c_agree")){ const a=document.getElementById("c_agree"); a.classList.toggle("on"); document.getElementById("c_go").disabled=!a.classList.contains("on"); return; }
+  if(e.target.closest("#c_go")){ acceptConsent(); return; }
+  const ms=e.target.closest("[data-mstep]");
+  if(ms){ const [id,k]=ms.dataset.mstep.split(":"); ms.classList.toggle("on"); haptic();
+    api((RT?"/api/rt/mentee/":"/api/mentee/")+id+"/checklist",{method:"POST",body:JSON.stringify({step:k})}).then(reload); return; }
+  const flag=e.target.closest("[data-flag]");
+  if(flag){ const [id,k]=flag.dataset.flag.split(":"); const on=!flag.classList.contains("on"); flag.classList.toggle("on"); haptic();
+    api((RT?"/api/rt/mentee/":"/api/mentee/")+id+"/flag",{method:"POST",body:JSON.stringify({flag:k,value:on})}).then(reload); return; }
+  const star=e.target.closest("[data-star]");
+  if(star){ fbRating=+star.dataset.star; document.querySelectorAll("#stars span").forEach(x=>x.classList.toggle("on", +x.dataset.star<=fbRating)); haptic(); return; }
+  const geo=e.target.closest("[data-geo]"); if(geo){ getGeo(); return; }
+  const add=e.target.closest("[data-add]"); if(add){ doAdd(add.dataset.add); return; }
+  if(e.target.closest("[data-close]")){ closeSheet(); render(); return; }
+  if(e.target===$("#sheet")){ closeSheet(); render(); return; }
+});
+document.addEventListener("keydown", e=>{ if(e.key===" "||e.key==="Enter"){ const c=e.target.closest&&e.target.closest("[data-step]"); if(c){ e.preventDefault(); c.click(); } }});
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && UI.tab==="density" && mapInstance) refreshLive(); });
+function startPick(){
+  const mw=document.querySelector(".mapwrap");
+  if(!mw || !mapInstance){ sheetAdd("addDensity"); return; }
+  document.getElementById("screen").scrollTop=0;
+  mw.classList.add("picking");
+  stopPolling();
+  setTimeout(()=>{ if(mapInstance) mapInstance.invalidateSize(); }, 120);
+}
+function confirmPick(){
+  const mw=document.querySelector(".mapwrap");
+  if(mapInstance){ const c=mapInstance.getCenter(); pickCoords={lat:c.lat, lng:c.lng}; }
+  if(mw) mw.classList.remove("picking");
+  setTimeout(()=>{ if(mapInstance) mapInstance.invalidateSize(); }, 120);
+  sheetAdd("addDensity");
+}
+function cancelPick(){
+  const mw=document.querySelector(".mapwrap"); if(mw) mw.classList.remove("picking");
+  setTimeout(()=>{ if(mapInstance) mapInstance.invalidateSize(); }, 120);
+  if(UI.tab==="density") startPolling();
+}
+function openSignalSheet(id){
+  const s=(DATA.density||[]).find(x=>x.id===id); if(!s) return;
+  openSheet(`<h3 style="margin:0 0 4px">${esc(s.point)}</h3>
+    <p class="note" style="margin:0 0 14px;text-align:left">${s.couriers} курьеров · ждут ~${s.wait} мин · ${esc(s.ago)}</p>
+    ${s.mine ? `<button class="btn ghost block" data-sig-refresh="${id}" style="margin-bottom:10px">Ещё актуально</button>
+      <button class="btn block" data-sig-del="${id}" style="margin-bottom:10px;color:#E03131;background:#FDECEC">Удалить сигнал</button>`
+     : `<p class="note" style="text-align:left;color:var(--muted);margin:0 0 12px">Чужой сигнал — изменить может только автор.</p>`}
+    <button class="btn pri block" data-close="1">Закрыть</button>`);
+}
+async function sigAction(id, kind){
+  closeSheet();
+  try{ await api("/api/density/"+id+"/"+kind,{method:"POST",body:"{}"}); await reload(); drawZones();
+    const el=document.getElementById("denslist"); if(el) el.innerHTML=densityItems();
+  }catch(e){ console.error(e); }
+}
+function getGeo(){
+  const note=$("#geonote"); if(note) note.textContent="Определяю...";
+  if(!navigator.geolocation){ if(note) note.textContent="Геолокация недоступна — точка по центру карты."; return; }
+  navigator.geolocation.getCurrentPosition(
+    pos=>{ pendingGeo={lat:pos.coords.latitude,lng:pos.coords.longitude}; if(note) note.textContent="Местоположение определено ✓"; },
+    ()=>{ if(note) note.textContent="Не удалось — точка по центру карты."; }, {enableHighAccuracy:true,timeout:8000});
+}
+function doAdd(kind){
+  const val=id=>($("#"+id)?.value||"").trim();
+  if(kind==="mentee"){ track("mentee_added"); closeSheet(); act(api("/api/mentee",{method:"POST",body:JSON.stringify({name:val("f_name")||"Новичок",handle:val("f_handle")||"newbie"})})); }
+  if(kind==="density"){ let c=pendingGeo||pickCoords||(mapInstance?{lat:mapInstance.getCenter().lat,lng:mapInstance.getCenter().lng}:{lat:CITY.lat,lng:CITY.lng});
+    track("density_sent"); closeSheet(); act(api("/api/density",{method:"POST",body:JSON.stringify({point:val("f_p")||"Новая точка",couriers:+val("f_c")||0,wait:+val("f_w")||0,lat:c.lat,lng:c.lng})})); }
+  if(kind==="request"){ track("buddy_sent"); closeSheet(); act(api("/api/partners",{method:"POST",body:JSON.stringify({type:val("f_type")||"Смены",area:val("f_area")||"—"})})); }
+  if(kind==="feedback"){ const t=(document.getElementById("fb_text")?.value||"").trim(); track("feedback_sent",{r:fbRating}); closeSheet(); act(api("/api/feedback",{method:"POST",body:JSON.stringify({rating:fbRating,text:t})})); }
+}
+
+function sheetLang(){
+  const langs=[["ru","Русский"],["uz","O\u02bbzbekcha"],["tg","\u0422\u043e\u04b7\u0438\u043a\u04e3"],["ar","\u0627\u0644\u0639\u0631\u0628\u064a\u0629"],["en","English"]];
+  openSheet(`<h3 style="margin:0 0 12px">${t('lang_title')}</h3>`+langs.map(([c,n])=>`<button class="btn ${c===LANG?'pri':'ghost'} block" data-lang="${c}" style="margin-bottom:8px">${n}</button>`).join(""));
+}
+function sheetToS(){ openSheet(`<div style="font-size:13.5px;line-height:1.6;white-space:pre-wrap">${TOS_HTML}</div><button class="btn pri block" data-close="1" style="margin-top:14px">OK</button>`); }
+function consented(){ try{ return localStorage.getItem('procom_consent')==='1'; }catch(e){ return false; } }
+function fillConsent(){
+  const langs=[["ru","Рус"],["uz","Uz"],["tg","Тоҷ"],["ar","عربي"],["en","En"]];
+  document.getElementById('conslang').innerHTML=langs.map(([c,n])=>`<button data-lang="${c}" class="${c===LANG?'on':''}">${n}</button>`).join("");
+  document.getElementById('c_title').textContent=t('cons_title');
+  document.getElementById('c_body').textContent=t('cons_body');
+  document.getElementById('c_read').textContent=t('cons_read');
+  document.getElementById('c_check').textContent=t('cons_check');
+  document.getElementById('c_go').textContent=t('cons_go');
+}
+function showConsent(){ fillConsent(); document.getElementById('consent').style.display='flex'; }
+function acceptConsent(){ try{ localStorage.setItem('procom_consent','1'); }catch(e){}
+  document.getElementById('consent').style.display='none'; maybeTour(); }
+const BIZ_STATS = {uplift:23, mp:0.78, cp:0.55, mr:39, m:50, cr:27, c:49, saved:836000, extra:12, fee:38000};
+function updateSeg(){ document.querySelectorAll("#seg button").forEach(b=>b.classList.toggle("on", b.dataset.role===UI.role)); }
+async function demoSwitch(role){
+  UI._nav=true;
+  if(role==="partner"){ UI.role="partner"; render(); return; }
+  UI.role=role;
+  try{ await api("/api/role",{method:"POST",body:JSON.stringify({role})}); await loadApp(); render(); }
+  catch(e){ console.error(e); render(); }
+}
+function viewBusiness(){
+  const _s=DATA.stats, _f=DATA.feedback;
+  DATA.stats=BIZ_STATS; if(!DATA.feedback) DATA.feedback=[];
+  const html=viewPartner();
+  DATA.stats=_s; DATA.feedback=_f;
+  return html;
+}
+let TOUR=[];
+function buildTour(){
+  const mentor = DATA && DATA.me && DATA.me.role==='mentor';
+  const first = mentor?'home':'path';
+  const core = [{el:'#tabs',k:mentor?'tour_m1':'tour_p1',tab:first},
+    {el:'#tabs',k:'tour_r2',tab:'density'},
+    {el:'#tabs',k:'tour_r3',tab:'partners'},
+    {el:'#tabs',k:'tour_r4',tab:'profile'},
+    {el:'.fbbtn',k:'tour_r5',tab:first}];
+  return DEMO ? [{el:'#seg',k:'tour_d1'}].concat(core) : core;
+}
+function maybeTour(){ if(!toured() && DATA && !DATA.needs) startTour(); }
+let tourIdx=0;
+function toured(){ try{ return localStorage.getItem('procom_tour')==='1'; }catch(e){ return false; } }
+function startTour(){ TOUR=buildTour(); if(!TOUR.length) return; tourIdx=0; document.getElementById('tourmask').classList.add('on'); tourStep(0); }
+function clearGlow(){ document.querySelectorAll('.tour-glow').forEach(e=>e.classList.remove('tour-glow')); }
+function tourStep(i){
+  if(i>=TOUR.length){ endTour(); return; }
+  tourIdx=i; const st=TOUR[i];
+  if(st.role && !RT){ UI.role=st.role; } if(st.tab){ UI.tab=st.tab; } if((st.role && !RT) || st.tab){ render(); }
+  clearGlow(); const target=document.querySelector(st.el); if(target) target.classList.add('tour-glow');
+  const tip=document.getElementById('tourtip'); tip.classList.add('on');
+  const dots=TOUR.map((_,j)=>`<i class="${j===i?'on':''}"></i>`).join("");
+  const last=i===TOUR.length-1;
+  tip.innerHTML=`<div class="tt">${t(st.k)}</div><div class="row2"><button class="sk" data-tour="skip">${t('skip')}</button><div class="dots">${dots}</div><button class="btn pri" data-tour="next">${last?t('done'):t('next')}</button></div>`;
+}
+function endTour(){ clearGlow(); document.getElementById('tourmask').classList.remove('on'); document.getElementById('tourtip').classList.remove('on'); try{ localStorage.setItem('procom_tour','1'); }catch(e){} }
+
+/* ---------- boot ---------- */
+
+/* ---------- real mode ---------- */
+const CITIES=[
+ {name:"Москва",lat:55.751,lng:37.618},{name:"Санкт-Петербург",lat:59.939,lng:30.315},
+ {name:"Новосибирск",lat:55.030,lng:82.920},{name:"Екатеринбург",lat:56.838,lng:60.597},
+ {name:"Казань",lat:55.796,lng:49.106},{name:"Нижний Новгород",lat:56.297,lng:43.936},
+ {name:"Челябинск",lat:55.160,lng:61.400},{name:"Самара",lat:53.195,lng:50.100},
+ {name:"Ростов-на-Дону",lat:47.222,lng:39.719},{name:"Краснодар",lat:45.035,lng:38.975},
+ {name:"Уфа",lat:54.735,lng:55.958},{name:"Красноярск",lat:56.010,lng:92.852},
+];
+let RT=false, gpsOff=false, DEMO=false;
+async function loadApp(){ DATA = await api("/api/app"); if(DATA && DATA.me) UI.role = DATA.me.role; }
+async function reload(){ if(RT) await loadApp(); else await load(); }
+async function postRole(role){ try{ await api("/api/role",{method:"POST",body:JSON.stringify({role})}); UI._nav=true; await loadApp(); render(); maybeTour(); }catch(e){console.error(e);} }
+async function postCity(city,lat,lng){ try{ await api("/api/city",{method:"POST",body:JSON.stringify({city,lat,lng})}); UI._nav=true; await loadApp(); render(); maybeTour(); }catch(e){console.error(e);} }
+function geoCity(){
+  const note=$("#citynote"); if(note) note.textContent=t('ob_detecting');
+  if(!navigator.geolocation){ if(note) note.textContent=t('ob_geo_fail'); return; }
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    const lat=pos.coords.latitude, lng=pos.coords.longitude;
+    try{
+      const _ac=new AbortController(); const _to=setTimeout(()=>_ac.abort(),7000);
+      const r=await fetch("https://nominatim.openstreetmap.org/reverse?format=json&zoom=10&accept-language=ru&lat="+lat+"&lon="+lng,{signal:_ac.signal}); clearTimeout(_to);
+      const j=await r.json(); const a=j.address||{};
+      const city=a.city||a.town||a.municipality||a.village||a.state||a.county||"";
+      if(city) postCity(city,lat,lng); else if(note) note.textContent=t('ob_geo_fail');
+    }catch(e){ if(note) note.textContent=t('ob_geo_fail'); }
+  }, ()=>{ if(note) note.textContent=t('ob_geo_fail'); }, {enableHighAccuracy:true,timeout:9000});
+}
+async function checkGps(){ try{ if(navigator.permissions){ const pm=await navigator.permissions.query({name:"geolocation"}); gpsOff=(pm.state==="denied"); pm.onchange=()=>{ gpsOff=(pm.state==="denied"); if(RT) render(); }; } }catch(e){} }
+function viewOnboardRole(){
+  const card=(role,ic,color,tt,ss)=>`<button class="rolecard" data-pick-role="${role}"><span class="ic2" style="background:${color}22">${ic}</span><span><div class="rt">${tt}</div><div class="rs">${ss}</div></span></button>`;
+  return `<div class="onboard"><div class="obhead"><h2>${t('ob_who')}</h2><p>${t('ob_who_sub')}</p></div>${card("newbie","🎒","#3B4CD6",t('ob_newbie'),t('ob_newbie_sub'))}${card("mentor","🧭","#12B886",t('ob_mentor'),t('ob_mentor_sub'))}</div>`;
+}
+function viewOnboardCity(){
+  return `<div class="onboard"><div class="obhead"><h2>${t('ob_city')}</h2><p>${t('ob_city_sub')}</p></div><button class="btn pri block" data-geo-city>${t('ob_geo')}</button><div class="orline">${t('ob_or')}</div><div class="citylist">${CITIES.map(c=>`<button class="cityitem" data-city="${esc(c.name)}" data-lat="${c.lat}" data-lng="${c.lng}">${esc(c.name)}</button>`).join("")}</div><p class="note" id="citynote"></p></div>`;
+}
+function viewProfile(){
+  const s=DATA.stats, me=DATA.me;
+  const av=`<div class="pav">${(me.name||"?")[0]}</div>`;
+  if(me.role==="mentor"){
+    return `<div class="prof-hero">${av}<div class="pn">${esc(me.name)}</div><div class="prole">${t('pr_mentor')} · ${esc(me.city||"")}</div></div><div class="grid2"><div class="stat"><div class="v">${s.mentees||0}</div><div class="k">${t('pr_mentees')}</div></div><div class="stat"><div class="v">${s.retained||0}</div><div class="k">${t('pr_retained_l')}</div></div></div><div class="card"><div class="row"><div class="grow"><div class="nm">${t('pr_city_l')}</div><div class="meta">${esc(me.city||"")}</div></div><button class="queue-take" data-change-city>${t('pr_change_city')}</button></div></div>`;
+  }
+  const p=Math.round((me.progress||0)*100);
+  return `<div class="prof-hero">${av}<div class="pn">${esc(me.name)}</div><div class="prole">${t('pr_newbie')} · ${esc(me.city||"")}</div></div><div class="grid2"><div class="stat"><div class="v">${me.day||0}</div><div class="k">${t('pr_day30')}</div></div><div class="stat"><div class="v">${p}%</div><div class="k">${t('pr_week1prog')}</div></div></div><div class="card"><div class="row"><div class="grow"><div class="nm">${t('pr_mentor_l')}</div><div class="meta">${me.mentor?esc(me.mentor.name):t('pr_no_mentor')}</div></div>${me.retained?`<span class="status st-ok">${t('pr_ret_badge')}</span>`:""}</div><div class="row"><div class="grow"><div class="nm">${t('pr_city_l')}</div><div class="meta">${esc(me.city||"")}</div></div><button class="queue-take" data-change-city>${t('pr_change_city')}</button></div></div>`;
+}
+function rtQueueBlock(){
+  const q=DATA.queue||[];
+  if(!q.length) return `<div class="card"><div class="empty">${t('q_empty')}</div></div>`;
+  return `<div class="card"><div class="cardhead"><h3>${t('q_title')}</h3><span class="pct">${q.length}</span></div>`+q.map(n=>`<div class="row"><div class="ava" style="background:${avaColor(n.id)};width:38px;height:38px;font-size:14px;border-radius:12px">${n.name[0]}</div><div class="grow"><div class="nm">${esc(n.name)}</div><div class="meta">День ${n.day}/30</div></div><button class="queue-take" data-take="${n.id}">${t('take')}</button></div>`).join("")+`</div>`;
+}
+function renderRTTabs(){
+  const tb=(id,lbl,path)=>`<button data-tab="${id}" class="${UI.tab===id?'on':''}"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>${lbl}</button>`;
+  const first = UI.role==="mentor"
+    ? tb("home",t("t_home"),"<circle cx='9' cy='8' r='3'/><circle cx='17' cy='10' r='2.5'/><path d='M3 20c0-3 3-5 6-5s6 2 6 5'/>")
+    : tb("path",t("t_path"),"<circle cx='12' cy='12' r='9'/><path d='M12 8v4l3 2'/>");
+  const density=tb("density",t("t_density"),"<path d='M3 11l9-8 9 8'/><path d='M5 10v10h14V10'/>");
+  const partners=tb("partners",t("t_partner"),"<circle cx='9' cy='8' r='3'/><circle cx='17' cy='10' r='2.5'/><path d='M3 20c0-3 3-5 6-5s6 2 6 5'/>");
+  const profile=tb("profile",t("t_profile"),"<circle cx='12' cy='8' r='4'/><path d='M4 21c0-4 4-6 8-6s8 2 8 6'/>");
+  $("#tabs").innerHTML = first+density+partners+profile;
+}
+function gpsBar(){ return (RT && gpsOff) ? `<div class="gpsbar"><span>${t('gps_hint')}</span><button data-gps-x>×</button></div>` : ""; }
+function navFade(){ const _sc=$("#screen"); if(UI._nav){ _sc.scrollTop=0; _sc.classList.remove("nav-in"); void _sc.offsetWidth; _sc.classList.add("nav-in"); UI._nav=false; } }
+function renderRT(){
+  const tabs=$("#tabs");
+  if(DEMO) updateSeg();
+  if(DEMO && UI.role==="partner"){ tabs.style.display="none"; $("#screen").innerHTML=viewBusiness(); navFade(); return; }
+  if(DATA.needs==="role"){ tabs.style.display="none"; $("#screen").innerHTML=viewOnboardRole(); navFade(); return; }
+  if(DATA.needs==="city"){ tabs.style.display="none"; $("#screen").innerHTML=viewOnboardCity(); navFade(); return; }
+  UI.role = DATA.me.role;
+  if(DEMO) updateSeg();
+  const valid = UI.role==="mentor" ? ["home","density","partners","profile"] : ["path","density","partners","profile"];
+  if(!valid.includes(UI.tab)) UI.tab=valid[0];
+  tabs.style.display="flex"; renderRTTabs();
+  let html;
+  if(UI.tab==="profile") html=viewProfile();
+  else if(UI.tab==="density") html=tabDensity();
+  else if(UI.tab==="partners") html=tabPartners();
+  else if(UI.role==="mentor") html=viewMentor();
+  else html=viewNewbie();
+  if(UI.tab!=="profile") html = gpsBar() + html;
+  $("#screen").innerHTML = html;
+  if(UI.tab==="path") enhanceHero();
+  if(UI.tab==="density") initMap();
+  navFade();
+}
+
+(async function(){ initTg();
+  document.getElementById("app").setAttribute("dir", LANG==="ar"?"rtl":"ltr");
+  let cfg={showcase:true};
+  try{ cfg = await api("/api/config"); }catch(e){}
+  DEMO = !!cfg.showcase; RT = true;
+  if(!DEMO){ const _l=document.querySelector(".rolebar .lbl"); if(_l) _l.style.display="none"; const _sg=$("#seg"); if(_sg) _sg.style.display="none"; }
+  checkGps();
+  try{ await loadApp(); }
+  catch(e){ $("#screen").innerHTML='<div class="empty" style="padding-top:40px">Не удалось связаться с сервером.<br>Проверьте соединение и обновите страницу.</div>'; return; }
+  try{ applyStaticI18n(); render(); track("open"); }
+  catch(e){ console.error("render error", e); }
+  if(!consented()) showConsent();
+  else maybeTour();
+})();
+</script>
+</body>
+</html>

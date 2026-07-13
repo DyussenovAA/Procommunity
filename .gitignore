@@ -1,0 +1,67 @@
+# ---- Секреты и окружение (НИКОГДА не коммитить) ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.json
+
+# ---- База данных SQLite (создаётся при запуске) ----
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg
+*.egg-info/
+.eggs/
+build/
+dist/
+*.manifest
+*.spec
+
+# ---- Виртуальные окружения ----
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# ---- Тесты и кэши инструментов ----
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+.tox/
+
+# ---- Логи ----
+*.log
+logs/
+
+# ---- IDE / редакторы ----
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ---- ОС ----
+.DS_Store
+.DS_Store?
+Thumbs.db
+desktop.ini
+
+# ---- Прочее ----
+tmp/
+temp/
+*.bak
