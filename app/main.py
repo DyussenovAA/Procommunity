@@ -410,7 +410,7 @@ async def ensure_demo(db, me):
         m = (await db.execute(select(User).where(User.role == "mentor", User.city == me.city))).scalars().first()
         if m is None:
             tg = await free_tg()
-            m = User(telegram_id=tg, name="Наставник Алексей", handle="pro_courier",
+            m = User(telegram_id=tg, name="Наставник Алексей", handle="dzhiga2000",
                      role="mentor", city=me.city, lat=me.lat, lng=me.lng)
             db.add(m); await db.commit(); await db.refresh(m)
         me.mentor_id = m.id

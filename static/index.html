@@ -778,7 +778,7 @@ function fillConsent(){
 function showConsent(){ fillConsent(); document.getElementById('consent').style.display='flex'; }
 function acceptConsent(){ try{ localStorage.setItem('procom_consent','1'); }catch(e){}
   document.getElementById('consent').style.display='none'; maybeTour(); }
-const BIZ_STATS = {uplift:23, mp:0.78, cp:0.55, mr:39, m:50, cr:27, c:49, saved:836000, extra:12, fee:38000};
+const BIZ_STATS = {uplift:23, mp:0.78, cp:0.55, mr:39, m:50, cr:27, c:49, saved:114000, extra:12, fee:38000};
 function updateSeg(){ document.querySelectorAll("#seg button").forEach(b=>b.classList.toggle("on", b.dataset.role===UI.role)); }
 async function demoSwitch(role){
   UI._nav=true;
